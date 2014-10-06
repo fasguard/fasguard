@@ -27,3 +27,7 @@ bin_PROGRAMS += \
 fasguard_ad_host_peering_SOURCES = \
 	src/logging.h \
 	src/main.c
+
+.PHONY: doc
+doc: doc/Doxyfile
+	doxygen doc/Doxyfile

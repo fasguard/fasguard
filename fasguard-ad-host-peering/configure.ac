@@ -1,5 +1,7 @@
 AC_PREREQ(2.59)
 AC_INIT(fasguard-ad-host-peering, 0.1, fasguard@bbn.com)
+PACKAGE_LONGNAME="Reference Anomaly Detector"
+AC_SUBST([PACKAGE_LONGNAME])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES
@@ -33,6 +35,7 @@ AC_FUNC_REALLOC
 
 AC_CONFIG_FILES([
     Makefile
+    doc/Doxyfile
 ])
 
 
