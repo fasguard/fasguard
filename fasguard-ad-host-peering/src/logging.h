@@ -1,3 +1,10 @@
+/**
+    @file
+    @brief Macros for logging.
+
+    This file contains macros that should be used for logging.
+*/
+
 #ifndef _HOST_PEERING_LOGGING_H
 #define _HOST_PEERING_LOGGING_H
 
@@ -5,9 +12,9 @@
 #include <stdbool.h>
 
 /**
-    Open the log for writing.
+    @brief Open the log for writing.
 
-    This should be called before any calls to #LOG().
+    @note This should be called before any calls to #LOG().
 */
 #define OPEN_LOG() \
     do \
@@ -16,9 +23,9 @@
     } while (false)
 
 /**
-    Close the log.
+    @brief Close the log.
 
-    This should be called before the program exits.
+    @note This should be called before the program exits.
 */
 #define CLOSE_LOG() \
     do \
@@ -27,7 +34,12 @@
     } while (false)
 
 /**
-    Log a message.
+    @brief Log a message.
+
+    @param[in] priority One of LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR,
+                               LOG_WARNING, LOG_NOTICE, LOG_INFO, or LOG_DEBUG.
+    @param[in] format A printf-style format string. Subsequent parameters are
+                      subsituted into this string as appropriate.
 */
 #define LOG(priority, format, ...) \
     do \
