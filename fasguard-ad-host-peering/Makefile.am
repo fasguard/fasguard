@@ -25,6 +25,8 @@ bin_PROGRAMS += \
 	fasguard-ad-host-peering
 
 fasguard_ad_host_peering_SOURCES = \
+	src/anomaly.c \
+	src/anomaly.h \
 	src/logging.h \
 	src/main.c
 

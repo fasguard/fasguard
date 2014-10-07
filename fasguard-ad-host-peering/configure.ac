@@ -28,9 +28,14 @@ AC_CHECK_HEADERS([syslog.h], [], [
 ])
 
 AC_TYPE_SIZE_T
+AC_TYPE_UINT8_T
 
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
+
+AC_CHECK_FUNCS([getopt_long], [], [
+    AC_MSG_FAILURE([a required function is missing])
+])
 
 
 AC_CONFIG_FILES([
