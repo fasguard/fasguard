@@ -19,11 +19,10 @@
     @todo Implement the CDF/SF detections.
 */
 
-#include <stdlib.h>
 #include <sys/time.h>
 
-#include "anomaly.h"
-#include "logging.h"
+#include "anomaly.hpp"
+#include "logging.hpp"
 
 
 /**
@@ -86,58 +85,18 @@ static struct timeval const GENERATION_INTERVAL = {
 #define EMA_SLOW_THRESHOLD 10.0
 
 
-/**
-    @brief This struct contains all the state for the anomaly detector.
-
-    @todo Add a map from IP address to histogram
-    @todo Add a map from IP address to set of peer IP addresses
-    @todo Remove anomaly_data#ignored
-*/
-struct anomaly_data
+AnomalyData::AnomalyData()
 {
-    uint8_t ignored;
-};
-
-
-void * new_anomaly_data()
-{
-    struct anomaly_data * data = malloc(sizeof(struct anomaly_data));
-    if (data == NULL)
-    {
-        LOG(LOG_ERR, "Error allocating anomaly data.");
-        return NULL;
-    }
-
-    // TODO: initialize contents of data
-
-    return data;
 }
 
-void free_anomaly_data(
-    void * data)
+AnomalyData::~AnomalyData()
 {
-    if (data == NULL)
-    {
-        return;
-    }
-
-    struct anomaly_data * anomaly_data = (struct anomaly_data *)data;
-
-    // TODO: free contents of anomaly_data
-
-    free(anomaly_data);
-
-    return;
 }
 
-void anomaly_packet_callback(
-    uint8_t * user,
-    struct pcap_pkthdr const * h,
-    uint8_t const * bytes)
+void AnomalyData::process_packet(
+    struct pcap_pkthdr const * pcap_header,
+    uint8_t const * packet)
 {
-    struct anomaly_data * data = (struct anomaly_data *)user;
-
-    (void)data;
-    (void)h;
-    (void)bytes;
+    (void)pcap_header;
+    (void)packet;
 }

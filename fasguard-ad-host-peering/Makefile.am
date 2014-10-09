@@ -9,7 +9,7 @@ AUTOMAKE_OPTIONS = \
 ACLOCAL_AMFLAGS = -I build-aux
 
 
-AM_CFLAGS = \
+AM_CXXFLAGS = \
 	-Wall \
 	-Wextra \
 	-g
@@ -25,10 +25,10 @@ bin_PROGRAMS += \
 	fasguard-ad-host-peering
 
 fasguard_ad_host_peering_SOURCES = \
-	src/anomaly.c \
-	src/anomaly.h \
-	src/logging.h \
-	src/main.c
+	src/anomaly.cpp \
+	src/anomaly.hpp \
+	src/logging.hpp \
+	src/main.cpp
 
 .PHONY: doc
 doc: doc/Doxyfile

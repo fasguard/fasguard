@@ -3,12 +3,13 @@
     @brief Main code for the host-peering anomaly detector.
 */
 
+#include <cstdlib>
 #include <getopt.h>
+#include <new>
 #include <pcap/pcap.h>
-#include <stdlib.h>
 
-#include "anomaly.h"
-#include "logging.h"
+#include "anomaly.hpp"
+#include "logging.hpp"
 
 
 /**
@@ -27,6 +28,20 @@ static void print_help()
 }
 
 /**
+    @brief Handle a single packet.
+
+    This function is suitable for passing as the callback to pcap_loop.
+*/
+static void packet_callback(
+    uint8_t * user,
+    struct pcap_pkthdr const * h,
+    uint8_t const * bytes)
+{
+    AnomalyData * anomaly_data = (AnomalyData *)user;
+    anomaly_data->process_packet(h, bytes);
+}
+
+/**
     @brief Run the whole show.
 
     @todo Handle signals properly.
@@ -36,9 +51,10 @@ int main(
     char **argv)
 {
     int ret = EXIT_SUCCESS;
-    void * anomaly_data = NULL;
+    AnomalyData * anomaly_data = NULL;
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
     pcap_t * pcap_handle = NULL;
+    int pcap_loop_ret;
 
     OPEN_LOG();
 
@@ -88,9 +104,13 @@ int main(
 
 
     // Create initial state for the anomaly detector.
-    anomaly_data = new_anomaly_data();
-    if (anomaly_data == NULL)
+    try
     {
+        anomaly_data = new AnomalyData();
+    }
+    catch (std::bad_alloc & e)
+    {
+        LOG(LOG_ERR, "Error allocating memory for anomaly_data");
         ret = EXIT_FAILURE;
         goto done;
     }
@@ -138,7 +158,7 @@ int main(
 
 
     // Sniff packets and run the anomaly detector.
-    int pcap_loop_ret = pcap_loop(pcap_handle, -1, anomaly_packet_callback,
+    pcap_loop_ret = pcap_loop(pcap_handle, -1, packet_callback,
         (uint8_t *)anomaly_data);
     if (pcap_loop_ret == -1)
     {
@@ -158,7 +178,7 @@ done:
 
     if (anomaly_data != NULL)
     {
-        free_anomaly_data(anomaly_data);
+        delete anomaly_data;
     }
 
     CLOSE_LOG();
