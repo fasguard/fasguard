@@ -100,3 +100,14 @@ void AnomalyData::process_packet(
     (void)pcap_header;
     (void)packet;
 }
+
+AnomalyData::Histogram::Histogram() :
+    average(0.0),
+    mean_of_squares(0.0),
+    ema_fast(-1.0),
+    ema_slow(-1.0),
+    ema_fast_squared(0.0),
+    ema_slow_squared(0.0),
+    count(0)
+{
+}
