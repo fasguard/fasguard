@@ -19,8 +19,6 @@
     @todo Implement the CDF/SF detections.
 */
 
-#include <sys/time.h>
-
 #include "anomaly.hpp"
 #include "logging.hpp"
 
@@ -86,28 +84,116 @@ static struct timeval const GENERATION_INTERVAL = {
 
 
 AnomalyData::AnomalyData()
+:
+    mFirstPacket(NULL),
+    mPeers(),
+    mHistograms(),
+    mLastSeen()
 {
 }
 
 AnomalyData::~AnomalyData()
 {
+    delete mFirstPacket;
+    mFirstPacket = NULL;
 }
 
 void AnomalyData::process_packet(
     struct pcap_pkthdr const * pcap_header,
     uint8_t const * packet)
 {
-    (void)pcap_header;
     (void)packet;
+
+    if (mFirstPacket == NULL)
+    {
+        mFirstPacket = new struct timeval(pcap_header->ts);
+    }
 }
 
-AnomalyData::Histogram::Histogram() :
+AnomalyData::Histogram::Histogram()
+:
     average(0.0),
     mean_of_squares(0.0),
     ema_fast(-1.0),
     ema_slow(-1.0),
     ema_fast_squared(0.0),
     ema_slow_squared(0.0),
+    generation(0),
     count(0)
 {
+}
+
+/** In-place subtract a timeval from another timeval. */
+static struct timeval & operator-=(
+    struct timeval & x,
+    struct timeval const & y)
+{
+    x.tv_sec -= y.tv_sec;
+
+    if (x.tv_usec >= y.tv_usec)
+    {
+        x.tv_usec -= y.tv_usec;
+    }
+    else
+    {
+        --x.tv_sec;
+        x.tv_usec += 1000000 - y.tv_usec;
+    }
+
+    return x;
+}
+
+/** Multiply a timeval by an integer-like type. */
+template<typename Integer>
+static struct timeval operator*(
+    struct timeval const & x,
+    Integer const & y)
+{
+    struct timeval result = {
+        .tv_sec = (time_t)(x.tv_sec * y),
+        .tv_usec = 0,
+    };
+
+    uintmax_t usec = (uintmax_t)x.tv_usec * y;
+    result.tv_sec += usec / 1000000;
+    result.tv_usec = usec % 1000000;
+
+    return result;
+}
+
+/** Determine if a timeval is greater than or equal to another timeval. */
+static bool operator>=(
+    struct timeval const & x,
+    struct timeval const & y)
+{
+    return x.tv_sec > y.tv_sec ||
+        (x.tv_sec == y.tv_sec && x.tv_usec >= y.tv_usec);
+}
+
+AnomalyData::generation_t AnomalyData::getGeneration(
+    struct timeval const & when)
+    const
+{
+    // Compute the difference between mFirstPacket and when.
+    struct timeval remainder(when);
+    remainder -= *mFirstPacket;
+
+    // Compute a lower bound on the current generation, and decrement remainder
+    // appropriately.
+    AnomalyData::generation_t generation =
+        remainder.tv_sec / (GENERATION_INTERVAL.tv_sec + 1);
+    remainder -= GENERATION_INTERVAL * generation;
+
+    // Use repeated subtraction (inefficient) to refine generation to the
+    // correct value.
+    while (remainder >= GENERATION_INTERVAL)
+    {
+        remainder -= GENERATION_INTERVAL;
+        ++generation;
+    }
+
+    // At this point, generation is the current generation and remainder is the
+    // amount of time from the beginning of the generation to when.
+
+    return generation;
 }

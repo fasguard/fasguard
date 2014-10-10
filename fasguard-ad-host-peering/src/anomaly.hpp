@@ -9,8 +9,10 @@
 #include <inttypes.h>
 #include <unordered_map>
 #include <pcap/pcap.h>
+#include <sys/time.h>
 #include <unordered_set>
 
+#include "container.hpp"
 #include "network.hpp"
 
 /**
@@ -38,6 +40,11 @@ public:
         uint8_t const * packet);
 
 protected:
+    /**
+        @brief Type for a generation identifier.
+    */
+    typedef uint64_t generation_t;
+
     /**
         @brief Data about the history of the number of peers for a single IP.
     */
@@ -105,10 +112,32 @@ protected:
         double ema_slow_squared;
 
         /**
+            @brief Generation of the latest data point in this histogram.
+        */
+        generation_t generation;
+
+        /**
             @brief Number of data points used to build this histogram.
         */
         uint64_t count;
     };
+
+    /**
+        @brief Get the generation that corresponds to @p when.
+
+        The generation counts from zero, so this function calculates
+        <tt>(when - *#mFirstPacket) / #GENERATION_INTERVAL</tt>.
+    */
+    generation_t getGeneration(
+        struct timeval const & when)
+        const;
+
+    /**
+        @brief When the first packet was seen.
+
+        If this is NULL, then no packet has been seen yet.
+    */
+    struct timeval const * mFirstPacket;
 
     /**
         @brief Map from IP address to set of peer IP addresses.
@@ -121,6 +150,16 @@ protected:
         @brief Map from IP address to histogram for that IP.
     */
     std::unordered_map<IPAddress, Histogram> mHistograms;
+
+    /**
+        @brief Priority queue used to find the IPAddress that was last seen
+               the greatest number of generations ago.
+    */
+    mapped_priority_queue<
+        generation_t,
+        IPAddress,
+        std::greater<generation_t>>
+        mLastSeen;
 };
 
 #endif
