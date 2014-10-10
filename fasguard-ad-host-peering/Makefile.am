@@ -28,7 +28,9 @@ fasguard_ad_host_peering_SOURCES = \
 	src/anomaly.cpp \
 	src/anomaly.hpp \
 	src/logging.hpp \
-	src/main.cpp
+	src/main.cpp \
+	src/network.cpp \
+	src/network.hpp
 
 .PHONY: doc
 doc: doc/Doxyfile

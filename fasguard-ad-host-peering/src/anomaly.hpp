@@ -7,7 +7,11 @@
 #define _HOST_PEERING_ANOMALY_H
 
 #include <inttypes.h>
+#include <unordered_map>
 #include <pcap/pcap.h>
+#include <unordered_set>
+
+#include "network.hpp"
 
 /**
     @brief Number of bytes needed from the beginning of each packet.
@@ -18,9 +22,6 @@
 
 /**
     @brief This contains all the state for the anomaly detector.
-
-    @todo Add a map from IP address to histogram
-    @todo Add a map from IP address to set of peer IP addresses
 */
 class AnomalyData
 {
@@ -108,6 +109,18 @@ protected:
         */
         uint64_t count;
     };
+
+    /**
+        @brief Map from IP address to set of peer IP addresses.
+
+        This is cleared at the end of each generation.
+    */
+    std::unordered_map<IPAddress, std::unordered_set<IPAddress>> mPeers;
+
+    /**
+        @brief Map from IP address to histogram for that IP.
+    */
+    std::unordered_map<IPAddress, Histogram> mHistograms;
 };
 
 #endif
