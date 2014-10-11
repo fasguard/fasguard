@@ -12,5 +12,7 @@
 
 *.o
 
+.*.swp
+
 /fasguard-ad-host-peering
 /fasguard-ad-host-peering-*.tar.gz
