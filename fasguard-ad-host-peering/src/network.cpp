@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 //#include <boost/functional/hash.hpp> // TODO: uncomment this once we have the autoconf macros for boost
 #include <cstring>
 
@@ -7,6 +8,11 @@
 size_t const IPAddress::LENGTHS[] = {
     4, // IPv4
     16, // IPv6
+};
+
+int const IPAddress::DOMAINS[] = {
+    AF_INET, // IPv4
+    AF_INET6, // IPv6
 };
 
 IPAddress::IPAddress(
@@ -39,6 +45,13 @@ size_t IPAddress::getLength() const
 uint8_t const * IPAddress::getBytes() const
 {
     return mBytes;
+}
+
+std::string IPAddress::toString() const
+{
+    char s[INET6_ADDRSTRLEN];
+    inet_ntop(IPAddress::DOMAINS[mVersion], mBytes, s, INET6_ADDRSTRLEN);
+    return std::string(s);
 }
 
 namespace std

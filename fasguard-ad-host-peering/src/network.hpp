@@ -8,6 +8,7 @@
 
 #include <cinttypes>
 #include <functional>
+#include <string>
 
 
 /**
@@ -33,6 +34,14 @@ public:
         @sa Version
     */
     static size_t const LENGTHS[];
+
+    /**
+        @brief Mapping from #Version to the appropriate socket domain (e.g.,
+               AF_INET).
+
+        @sa Version
+    */
+    static int const DOMAINS[];
 
     /**
         @brief Create an IPAddress from a buffer.
@@ -64,6 +73,11 @@ public:
         @brief Get the bytes of this address.
     */
     uint8_t const * getBytes() const;
+
+    /**
+        @brief Return a string representation of this address.
+    */
+    std::string toString() const;
 
 protected:
     Version mVersion;
