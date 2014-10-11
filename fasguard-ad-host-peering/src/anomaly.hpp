@@ -6,7 +6,7 @@
 #ifndef _HOST_PEERING_ANOMALY_H
 #define _HOST_PEERING_ANOMALY_H
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <unordered_map>
 #include <pcap/pcap.h>
 #include <sys/time.h>
@@ -42,8 +42,17 @@ public:
 protected:
     /**
         @brief Type for a generation identifier.
+
+        @sa PRI_GENERATION_T
     */
     typedef uint64_t generation_t;
+
+    /**
+        @brief Macro for using #AnomalyData::generation_t with printf.
+
+        @sa AnomalyData::generation_t
+    */
+    #define PRI_GENERATION_T PRIu64
 
     /**
         @brief Data about the history of the number of peers for a single IP.
@@ -51,6 +60,14 @@ protected:
     struct Histogram
     {
         Histogram();
+
+        /**
+            @brief Update the histogram with a new value.
+
+            @note This does not update #generation.
+        */
+        void next_value(
+            size_t value);
 
         /**
             @brief Cumulative mean of the number of peers we've had per
@@ -133,11 +150,46 @@ protected:
         const;
 
     /**
+        @brief Remove old data.
+
+        Remove any histograms that haven't been updated in
+        #MAX_EMPTY_GENERATIONS generations.
+    */
+    void cleanup();
+
+    /**
+        @brief Update the histogram for a single host, and alert for any
+               anomalies.
+    */
+    void process_host(
+        IPAddress const & host);
+
+    /**
+        @brief Check a histogram for anomalies.
+    */
+    void check_for_anomalies(
+        IPAddress const & host,
+        Histogram const & histogram);
+
+    /**
+        @brief Do the processing to note that @p b is a peer of @p a, but not
+               vice versa.
+    */
+    void add_peers_one_direction(
+        IPAddress const & a,
+        IPAddress const & b);
+
+    /**
         @brief When the first packet was seen.
 
         If this is NULL, then no packet has been seen yet.
     */
     struct timeval const * mFirstPacket;
+
+    /**
+        @brief The current generation.
+    */
+    generation_t mCurrentGeneration;
 
     /**
         @brief Map from IP address to set of peer IP addresses.

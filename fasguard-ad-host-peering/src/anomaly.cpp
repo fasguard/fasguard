@@ -32,6 +32,14 @@ static struct timeval const GENERATION_INTERVAL = {
 };
 
 /**
+    @brief Maximum number of generations to store data for a host without seeing
+           traffic to/from that host.
+
+    @sa GENERATION_INTERVAL, AnomalyData::cleanup()
+*/
+#define MAX_EMPTY_GENERATIONS (24 * 60)
+
+/**
     @brief Alpha value for the fast EMA.
 
     Host Peering uses <a
@@ -86,6 +94,7 @@ static struct timeval const GENERATION_INTERVAL = {
 AnomalyData::AnomalyData()
 :
     mFirstPacket(NULL),
+    mCurrentGeneration(0),
     mPeers(),
     mHistograms(),
     mLastSeen()
@@ -108,19 +117,32 @@ void AnomalyData::process_packet(
     {
         mFirstPacket = new struct timeval(pcap_header->ts);
     }
-}
 
-AnomalyData::Histogram::Histogram()
-:
-    average(0.0),
-    mean_of_squares(0.0),
-    ema_fast(-1.0),
-    ema_slow(-1.0),
-    ema_fast_squared(0.0),
-    ema_slow_squared(0.0),
-    generation(0),
-    count(0)
-{
+    generation_t generation = getGeneration(pcap_header->ts);
+    if (generation != mCurrentGeneration)
+    {
+        LOG(LOG_DEBUG,
+            "done with generation %" PRI_GENERATION_T
+                ", starting generation %" PRI_GENERATION_T,
+            mCurrentGeneration,
+            generation);
+        mCurrentGeneration = generation;
+
+        cleanup();
+    }
+
+    //IPAddress srcAddress; // TODO: from packet
+    //IPAddress dstAddress; // TODO: from packet
+
+    if (mCurrentGeneration > 0)
+    {
+        // Process both hosts' data from previous generations.
+        //process_host(srcAddress);
+        //process_host(dstAddress);
+    }
+
+    //add_peers_one_direction(srcAddress, dstAddress);
+    //add_peers_one_direction(dstAddress, srcAddress);
 }
 
 /** In-place subtract a timeval from another timeval. */
@@ -196,4 +218,102 @@ AnomalyData::generation_t AnomalyData::getGeneration(
     // amount of time from the beginning of the generation to when.
 
     return generation;
+}
+
+void AnomalyData::cleanup()
+{
+    if (mCurrentGeneration <= MAX_EMPTY_GENERATIONS)
+    {
+        LOG(LOG_DEBUG,
+            "Software has not been running long enough to require cleanup.");
+        return;
+    }
+
+    while (!mLastSeen.empty() &&
+        mLastSeen.top().first < mCurrentGeneration - MAX_EMPTY_GENERATIONS)
+    {
+        LOG(LOG_DEBUG, "Removing histogram for %s",
+            mLastSeen.top().second.toString().c_str());
+        mPeers.erase(mLastSeen.top().second);
+        mHistograms.erase(mLastSeen.top().second);
+        mLastSeen.pop();
+    }
+}
+
+void AnomalyData::process_host(
+    IPAddress const & host)
+{
+    Histogram & histogram = mHistograms[host];
+    if (histogram.generation >= mCurrentGeneration - 1)
+    {
+        // The histogram is already up to date.
+        return;
+    }
+
+    // Get the number of peers for the generation after the histogram was last
+    // updated.
+    size_t num_peers;
+    std::unordered_map<IPAddress, std::unordered_set<IPAddress>>::const_iterator
+        peers_iterator = mPeers.find(host);
+    if (peers_iterator == mPeers.cend())
+    {
+        num_peers = 0;
+    }
+    else
+    {
+        num_peers = peers_iterator->second.size();
+        mPeers.erase(peers_iterator);
+    }
+
+    // Update the histogram for the generation after the histogram was last
+    // updated.
+    histogram.next_value(num_peers);
+    ++histogram.generation;
+    check_for_anomalies(host, histogram);
+
+    // Update the histogram for any generations where the host was not seen.
+    while (histogram.generation < mCurrentGeneration - 1)
+    {
+        histogram.next_value(0);
+        ++histogram.generation;
+        check_for_anomalies(host, histogram);
+    }
+}
+
+void AnomalyData::check_for_anomalies(
+    IPAddress const & host,
+    AnomalyData::Histogram const & histogram)
+{
+    (void)host;
+    (void)histogram;
+
+    // TODO
+}
+
+void AnomalyData::add_peers_one_direction(
+    IPAddress const & a,
+    IPAddress const & b)
+{
+    mPeers[a].insert(b);
+}
+
+AnomalyData::Histogram::Histogram()
+:
+    average(0.0),
+    mean_of_squares(0.0),
+    ema_fast(-1.0),
+    ema_slow(-1.0),
+    ema_fast_squared(0.0),
+    ema_slow_squared(0.0),
+    generation(0),
+    count(0)
+{
+}
+
+void AnomalyData::Histogram::next_value(
+    size_t value)
+{
+    (void)value;
+
+    // TODO
 }
