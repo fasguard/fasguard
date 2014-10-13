@@ -37,8 +37,8 @@ static void packet_callback(
     struct pcap_pkthdr const * h,
     uint8_t const * bytes)
 {
-    AnomalyData * anomaly_data = (AnomalyData *)user;
-    anomaly_data->process_packet(h, bytes);
+    AnomalyDetector * anomaly_detector = (AnomalyDetector *)user;
+    anomaly_detector->process_packet(h, bytes);
 }
 
 /**
@@ -51,7 +51,7 @@ int main(
     char **argv)
 {
     int ret = EXIT_SUCCESS;
-    AnomalyData * anomaly_data = NULL;
+    AnomalyDetector * anomaly_detector = NULL;
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
     pcap_t * pcap_handle = NULL;
     int pcap_loop_ret;
@@ -106,11 +106,11 @@ int main(
     // Create initial state for the anomaly detector.
     try
     {
-        anomaly_data = new AnomalyData();
+        anomaly_detector = new AnomalyDetector();
     }
     catch (std::bad_alloc & e)
     {
-        LOG(LOG_ERR, "Error allocating memory for anomaly_data");
+        LOG(LOG_ERR, "Error allocating memory for anomaly_detector");
         ret = EXIT_FAILURE;
         goto done;
     }
@@ -159,7 +159,7 @@ int main(
 
     // Sniff packets and run the anomaly detector.
     pcap_loop_ret = pcap_loop(pcap_handle, -1, packet_callback,
-        (uint8_t *)anomaly_data);
+        (uint8_t *)anomaly_detector);
     if (pcap_loop_ret == -1)
     {
         LOG(LOG_ERR, "Error reading network traffic: %s",
@@ -176,9 +176,9 @@ done:
         pcap_close(pcap_handle);
     }
 
-    if (anomaly_data != NULL)
+    if (anomaly_detector != NULL)
     {
-        delete anomaly_data;
+        delete anomaly_detector;
     }
 
     CLOSE_LOG();

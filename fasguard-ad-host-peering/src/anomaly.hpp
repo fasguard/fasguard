@@ -25,12 +25,12 @@
 /**
     @brief This contains all the state for the anomaly detector.
 */
-class AnomalyData
+class AnomalyDetector
 {
 public:
-    AnomalyData();
+    AnomalyDetector();
 
-    ~AnomalyData();
+    ~AnomalyDetector();
 
     /**
         @brief Process a single packet in the anomaly detector.
@@ -48,9 +48,9 @@ protected:
     typedef uint64_t generation_t;
 
     /**
-        @brief Macro for using #AnomalyData::generation_t with printf.
+        @brief Macro for using #AnomalyDetector::generation_t with printf.
 
-        @sa AnomalyData::generation_t
+        @sa AnomalyDetector::generation_t
     */
     #define PRI_GENERATION_T PRIu64
 

@@ -35,7 +35,7 @@ static struct timeval const GENERATION_INTERVAL = {
     @brief Maximum number of generations to store data for a host without seeing
            traffic to/from that host.
 
-    @sa GENERATION_INTERVAL, AnomalyData::cleanup()
+    @sa GENERATION_INTERVAL, AnomalyDetector::cleanup()
 */
 #define MAX_EMPTY_GENERATIONS (24 * 60)
 
@@ -91,7 +91,7 @@ static struct timeval const GENERATION_INTERVAL = {
 #define EMA_SLOW_THRESHOLD 10.0
 
 
-AnomalyData::AnomalyData()
+AnomalyDetector::AnomalyDetector()
 :
     mFirstPacket(NULL),
     mCurrentGeneration(0),
@@ -101,13 +101,13 @@ AnomalyData::AnomalyData()
 {
 }
 
-AnomalyData::~AnomalyData()
+AnomalyDetector::~AnomalyDetector()
 {
     delete mFirstPacket;
     mFirstPacket = NULL;
 }
 
-void AnomalyData::process_packet(
+void AnomalyDetector::process_packet(
     struct pcap_pkthdr const * pcap_header,
     uint8_t const * packet)
 {
@@ -192,7 +192,7 @@ static bool operator>=(
         (x.tv_sec == y.tv_sec && x.tv_usec >= y.tv_usec);
 }
 
-AnomalyData::generation_t AnomalyData::getGeneration(
+AnomalyDetector::generation_t AnomalyDetector::getGeneration(
     struct timeval const & when)
     const
 {
@@ -202,7 +202,7 @@ AnomalyData::generation_t AnomalyData::getGeneration(
 
     // Compute a lower bound on the current generation, and decrement remainder
     // appropriately.
-    AnomalyData::generation_t generation =
+    AnomalyDetector::generation_t generation =
         remainder.tv_sec / (GENERATION_INTERVAL.tv_sec + 1);
     remainder -= GENERATION_INTERVAL * generation;
 
@@ -220,7 +220,7 @@ AnomalyData::generation_t AnomalyData::getGeneration(
     return generation;
 }
 
-void AnomalyData::cleanup()
+void AnomalyDetector::cleanup()
 {
     if (mCurrentGeneration <= MAX_EMPTY_GENERATIONS)
     {
@@ -240,7 +240,7 @@ void AnomalyData::cleanup()
     }
 }
 
-void AnomalyData::process_host(
+void AnomalyDetector::process_host(
     IPAddress const & host)
 {
     Histogram & histogram = mHistograms[host];
@@ -280,9 +280,9 @@ void AnomalyData::process_host(
     }
 }
 
-void AnomalyData::check_for_anomalies(
+void AnomalyDetector::check_for_anomalies(
     IPAddress const & host,
-    AnomalyData::Histogram const & histogram)
+    AnomalyDetector::Histogram const & histogram)
 {
     (void)host;
     (void)histogram;
@@ -290,14 +290,14 @@ void AnomalyData::check_for_anomalies(
     // TODO
 }
 
-void AnomalyData::add_peers_one_direction(
+void AnomalyDetector::add_peers_one_direction(
     IPAddress const & a,
     IPAddress const & b)
 {
     mPeers[a].insert(b);
 }
 
-AnomalyData::Histogram::Histogram()
+AnomalyDetector::Histogram::Histogram()
 :
     average(0.0),
     mean_of_squares(0.0),
@@ -340,7 +340,7 @@ static double new_ema_calc(
     return (alpha * new_value) + ((1.0 - alpha) * previous_ema);
 }
 
-void AnomalyData::Histogram::next_value(
+void AnomalyDetector::Histogram::next_value(
     size_t value)
 {
     double const value_squared = (double)value * (double)value;
