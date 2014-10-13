@@ -310,10 +310,63 @@ AnomalyData::Histogram::Histogram()
 {
 }
 
+/**
+    @brief Calculate a new average.
+
+    @param[in] previous_average The average when the previous value was added.
+    @param[in] new_value The value to add.
+    @param[in] new_count The total number of values, including @p new_value.
+*/
+static double new_average_calc(
+    double previous_average,
+    double new_value,
+    size_t new_count)
+{
+    return (new_value + (new_count - 1) * previous_average) / new_count;
+}
+
+/**
+    @brief Calculate a new exponential moving average.
+
+    @param[in] previous_ema The EMA when the previous value was added.
+    @param[in] new_value The value to add.
+    @param[in] alpha Alpha value. See #ALPHA_FAST for a description.
+*/
+static double new_ema_calc(
+    double previous_ema,
+    double new_value,
+    double alpha)
+{
+    return (alpha * new_value) + ((1.0 - alpha) * previous_ema);
+}
+
 void AnomalyData::Histogram::next_value(
     size_t value)
 {
-    (void)value;
+    double const value_squared = (double)value * (double)value;
 
-    // TODO
+    ++count;
+
+    // Incorporate value into the normal averages.
+    average = new_average_calc(average, value, count);
+    mean_of_squares = new_average_calc(mean_of_squares, value_squared, count);
+
+    if (count == 1)
+    {
+        // Initialize the EMAs with value.
+        ema_fast = value;
+        ema_slow = value;
+        ema_fast_squared = value_squared;
+        ema_slow_squared = value_squared;
+    }
+    else
+    {
+        // Incorporate value into the EMAs.
+        ema_fast = new_ema_calc(ema_fast, value, ALPHA_FAST);
+        ema_slow = new_ema_calc(ema_slow, value, ALPHA_SLOW);
+        ema_fast_squared = new_ema_calc(
+            ema_fast_squared, value_squared, ALPHA_FAST);
+        ema_slow_squared = new_ema_calc(
+            ema_slow_squared, value_squared, ALPHA_SLOW);
+    }
 }
