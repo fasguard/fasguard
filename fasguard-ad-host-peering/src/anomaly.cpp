@@ -19,6 +19,8 @@
     @todo Implement the CDF/SF detections.
 */
 
+#include <cmath>
+
 #include "anomaly.hpp"
 #include "logging.hpp"
 
@@ -68,32 +70,6 @@ static struct timeval const GENERATION_INTERVAL = {
 */
 #define ALPHA_SLOW 0.05
 
-/**
-    @brief Threshold for a single generation to be considered anomalous.
-
-    If any host has more than this many peers in a single generation, it is
-    considered anomalous.
-*/
-#define INSTANTANEOUS_THRESHOLD 20
-
-/**
-    @brief Threshold for the EMA fasguard to be considered anomalous.
-
-    If the EMA fasguard for any host exceeds this value, it is considered anomalous.
-
-    @sa ALPHA_FAST
-*/
-#define EMA_FASGUARD_THRESHOLD 15.0
-
-/**
-    @brief Threshold for the EMA slow to be considered anomalous.
-
-    If the EMA slow for any host exceeds this value, it is considered anomalous.
-
-    @sa ALPHA_SLOW
-*/
-#define EMA_SLOW_THRESHOLD 10.0
-
 
 AnomalyDetector::AnomalyDetector()
 :
@@ -101,7 +77,8 @@ AnomalyDetector::AnomalyDetector()
     mCurrentGeneration(0),
     mPeers(),
     mHistograms(),
-    mLastSeen()
+    mLastSeen(),
+    mAnomalous()
 {
 }
 
@@ -147,6 +124,13 @@ void AnomalyDetector::process_packet(
 
     //add_peers_one_direction(srcAddress, dstAddress);
     //add_peers_one_direction(dstAddress, srcAddress);
+}
+
+bool AnomalyDetector::is_anomalous(
+    IPAddress const & addr)
+    const
+{
+    return (bool)mAnomalous.count(addr);
 }
 
 /** In-place subtract a timeval from another timeval. */
@@ -280,25 +264,90 @@ void AnomalyDetector::process_host(
     // updated.
     histogram.next_value(num_peers);
     ++histogram.generation;
-    check_for_anomalies(host, histogram);
 
     // Update the histogram for any generations where the host was not seen.
     while (histogram.generation < mCurrentGeneration - 1)
     {
-        histogram.next_value(0);
+        num_peers = 0;
+        histogram.next_value(num_peers);
         ++histogram.generation;
-        check_for_anomalies(host, histogram);
+    }
+
+    if (check_for_anomalies(host, histogram, num_peers))
+    {
+        mAnomalous.insert(host);
+    }
+    else
+    {
+        mAnomalous.erase(host);
     }
 }
 
-void AnomalyDetector::check_for_anomalies(
-    IPAddress const & host,
-    AnomalyDetector::Histogram const & histogram)
+/**
+   @brief Calculate the standard deviation.
+*/
+static double stddev_calc(
+    double mean_of_squares,
+    double mean)
 {
-    (void)host;
-    (void)histogram;
+    double const variance = mean_of_squares - mean * mean;
 
+    // Handle rounding issues.
+    if (variance > -1e-9 && variance <= 0.0)
+    {
+        return 0.0;
+    }
+
+    return sqrt(variance);
+}
+
+/**
+    @brief Determine if @p datum is anomalous, given @p mean and @p stddev.
+*/
+static bool datum_is_anomalous(
+    double mean,
+    double stddev,
+    size_t datum)
+{
     // TODO
+    (void)mean;
+    (void)stddev;
+    (void)datum;
+    return false;
+}
+
+bool AnomalyDetector::check_for_anomalies(
+    IPAddress const & host,
+    AnomalyDetector::Histogram const & histogram,
+    size_t num_peers)
+{
+    (void)host; // This could be used for LOGging in the future.
+
+    if (datum_is_anomalous(
+        histogram.average,
+        stddev_calc(histogram.mean_of_squares, histogram.average),
+        num_peers))
+    {
+        return true;
+    }
+
+    if (datum_is_anomalous(
+        histogram.ema_fast,
+        stddev_calc(histogram.ema_fast_squared, histogram.ema_fast),
+        num_peers))
+    {
+        return true;
+    }
+
+    if (datum_is_anomalous(
+        histogram.ema_slow,
+        stddev_calc(histogram.ema_slow_squared, histogram.ema_slow),
+        num_peers))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 void AnomalyDetector::add_peers_one_direction(

@@ -39,6 +39,14 @@ public:
         struct pcap_pkthdr const * pcap_header,
         uint8_t const * packet);
 
+    /**
+        @brief Return whether the specified host is currently considered to be
+               anomalous.
+    */
+    bool is_anomalous(
+        IPAddress const & addr)
+        const;
+
 protected:
     /**
         @brief Type for a generation identifier.
@@ -166,10 +174,14 @@ protected:
 
     /**
         @brief Check a histogram for anomalies.
+
+        @retval true There is an anomaly.
+        @retval false There are no anomalies.
     */
-    void check_for_anomalies(
+    bool check_for_anomalies(
         IPAddress const & host,
-        Histogram const & histogram);
+        Histogram const & histogram,
+        size_t num_peers);
 
     /**
         @brief Do the processing to note that @p b is a peer of @p a, but not
@@ -212,6 +224,11 @@ protected:
         IPAddress,
         std::greater<generation_t>>
         mLastSeen;
+
+    /**
+        @brief Set of IPAddresses that are currently considered anomalous.
+    */
+    std::unordered_set<IPAddress> mAnomalous;
 };
 
 #endif
