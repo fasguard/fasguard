@@ -25,6 +25,10 @@
 
 /**
     @brief The length of a single generation.
+
+    Setting this to too small of a value may adversely affect performance, see
+    the implementation of #AnomalyDetector::getGeneration. Additionally, any
+    per-generation processing would have to be performed more frequently.
 */
 static struct timeval const GENERATION_INTERVAL = {
     .tv_sec = 60,
