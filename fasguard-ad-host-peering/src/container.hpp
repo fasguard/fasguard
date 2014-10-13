@@ -27,6 +27,9 @@ public:
     {
     }
 
+    /**
+        @brief Compare the priorities of x and y using #mPriorityCompare.
+    */
     bool operator()(
         Item const & x,
         Item const & y)
@@ -36,6 +39,10 @@ public:
     }
 
 protected:
+    /**
+        @brief The underlying comparison object to use to compare values of type
+               Priority.
+    */
     PriorityCompare mPriorityCompare;
 };
 
