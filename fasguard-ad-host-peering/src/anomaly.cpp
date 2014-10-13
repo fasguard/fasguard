@@ -200,11 +200,18 @@ AnomalyDetector::generation_t AnomalyDetector::getGeneration(
     struct timeval remainder(when);
     remainder -= *mFirstPacket;
 
-    // Compute a lower bound on the current generation, and decrement remainder
-    // appropriately.
-    AnomalyDetector::generation_t generation =
-        remainder.tv_sec / (GENERATION_INTERVAL.tv_sec + 1);
-    remainder -= GENERATION_INTERVAL * generation;
+    generation_t generation = 0;
+
+    // Iteratively compute potentially poor lower bounds on the current
+    // generation, decrementing the remainder appropriately.
+    generation_t generation_increment;
+    do
+    {
+        generation_increment =
+            remainder.tv_sec / (GENERATION_INTERVAL.tv_sec + 1);
+        generation += generation_increment;
+        remainder -= GENERATION_INTERVAL * generation_increment;
+    } while (generation_increment > 0);
 
     // Use repeated subtraction (inefficient) to refine generation to the
     // correct value.
