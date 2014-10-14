@@ -9,6 +9,7 @@
 #include <pcap/pcap.h>
 
 #include "anomaly.hpp"
+#include "linkheader.hpp"
 #include "logging.hpp"
 
 
@@ -28,6 +29,18 @@ static void print_help()
 }
 
 /**
+    @brief Data to pass to #packet_callback.
+*/
+struct packet_callback_data_t
+{
+    /** @brief Callback to get the layer 2 header length. */
+    layer2_hlen_t layer2_hlen_callback;
+
+    /** @brief Anomaly detector. */
+    AnomalyDetector * anomaly_detector;
+};
+
+/**
     @brief Handle a single packet.
 
     This function is suitable for passing as the callback to pcap_loop.
@@ -37,8 +50,14 @@ static void packet_callback(
     struct pcap_pkthdr const * h,
     uint8_t const * bytes)
 {
-    AnomalyDetector * anomaly_detector = (AnomalyDetector *)user;
-    anomaly_detector->process_packet(h, bytes);
+    packet_callback_data_t * packet_callback_data =
+        (packet_callback_data_t *)user;
+
+    size_t layer2_hlen = packet_callback_data->layer2_hlen_callback(
+        h->caplen, bytes);
+
+    packet_callback_data->anomaly_detector->process_packet(
+        h, layer2_hlen, bytes);
 }
 
 /**
@@ -51,9 +70,13 @@ int main(
     char **argv)
 {
     int ret = EXIT_SUCCESS;
-    AnomalyDetector * anomaly_detector = NULL;
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
     pcap_t * pcap_handle = NULL;
+    int link_layer_header_type;
+    packet_callback_data_t packet_callback_data = {
+        .layer2_hlen_callback = NULL,
+        .anomaly_detector = NULL,
+    };
     int pcap_loop_ret;
 
     OPEN_LOG();
@@ -103,19 +126,6 @@ int main(
     }
 
 
-    // Create initial state for the anomaly detector.
-    try
-    {
-        anomaly_detector = new AnomalyDetector();
-    }
-    catch (std::bad_alloc & e)
-    {
-        LOG(LOG_ERR, "Error allocating memory for anomaly_detector");
-        ret = EXIT_FAILURE;
-        goto done;
-    }
-
-
     // Prepare to sniff packets from the network.
     pcap_errbuf[0] = '\0';
     pcap_handle = pcap_open_live(interface, ANOMALY_SNAPLEN, 1,
@@ -156,10 +166,37 @@ int main(
         pcap_freecode(&filter_compiled);
     }
 
+    link_layer_header_type = pcap_datalink(pcap_handle);
+    switch (link_layer_header_type)
+    {
+        case DLT_EN10MB:
+            packet_callback_data.layer2_hlen_callback = layer2_hlen_ethernet;
+            break;
+
+        default:
+            LOG(LOG_ERR, "Unsupported linktype with value %d",
+                link_layer_header_type);
+            ret = EXIT_FAILURE;
+            goto done;
+    }
+
+
+    // Create initial state for the anomaly detector.
+    try
+    {
+        packet_callback_data.anomaly_detector = new AnomalyDetector();
+    }
+    catch (std::bad_alloc & e)
+    {
+        LOG(LOG_ERR, "Error allocating memory for anomaly_detector");
+        ret = EXIT_FAILURE;
+        goto done;
+    }
+
 
     // Sniff packets and run the anomaly detector.
     pcap_loop_ret = pcap_loop(pcap_handle, -1, packet_callback,
-        (uint8_t *)anomaly_detector);
+        (uint8_t *)&packet_callback_data);
     if (pcap_loop_ret == -1)
     {
         LOG(LOG_ERR, "Error reading network traffic: %s",
@@ -171,14 +208,14 @@ int main(
 
 done:
     // Perform cleanup and exit.
+    if (packet_callback_data.anomaly_detector != NULL)
+    {
+        delete packet_callback_data.anomaly_detector;
+    }
+
     if (pcap_handle != NULL)
     {
         pcap_close(pcap_handle);
-    }
-
-    if (anomaly_detector != NULL)
-    {
-        delete anomaly_detector;
     }
 
     CLOSE_LOG();

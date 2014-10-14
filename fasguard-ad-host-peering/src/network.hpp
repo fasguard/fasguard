@@ -12,6 +12,12 @@
 
 
 /**
+    @brief Extract the version field from a pointer to the beginning of an IP
+           packet.
+*/
+#define IP_VERSION(packet) (((packet)[0] & 0xf0) >> 4)
+
+/**
     @brief Class to represent a single IP address (v4 or v6).
 */
 class IPAddress

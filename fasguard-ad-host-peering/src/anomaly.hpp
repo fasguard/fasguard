@@ -17,10 +17,8 @@
 
 /**
     @brief Number of bytes needed from the beginning of each packet.
-
-    @todo Pick a more appropriate value for this.
 */
-#define ANOMALY_SNAPLEN 128
+#define ANOMALY_SNAPLEN 64
 
 /**
     @brief This contains all the state for the anomaly detector.
@@ -37,6 +35,7 @@ public:
     */
     void process_packet(
         struct pcap_pkthdr const * pcap_header,
+        size_t layer2_hlen,
         uint8_t const * packet);
 
     /**
