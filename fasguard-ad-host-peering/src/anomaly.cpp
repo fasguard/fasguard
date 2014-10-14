@@ -15,11 +15,11 @@
     that histogram for anomalies.
 
     @todo Provide a brief description of SMITE?
-
-    @todo Implement the CDF/SF detections.
 */
 
 #include <cmath>
+//#include <boost/math/distributions/normal.hpp> // TODO: uncomment
+//#include <boost/math/distributions/poisson.hpp> // TODO: uncomment
 
 #include "anomaly.hpp"
 #include "logging.hpp"
@@ -69,6 +69,17 @@ static struct timeval const GENERATION_INTERVAL = {
     @sa ALPHA_FAST
 */
 #define ALPHA_SLOW 0.05
+
+/**
+    @brief Probability threshold under which a number is considered anomolous.
+
+    The number of peers is considered anomalous under a specific probability
+    distribution when the cumulative distribution function or survival function
+    evaluates to a value lower that this. This value must be between 0.0 and
+    1.0, though only values close to 0.0 are useful. The closer to 0.0 it is,
+    the fewer detections there will be.
+*/
+#define ANOMALOUS_THRESHOLD 4e-9
 
 
 AnomalyDetector::AnomalyDetector()
@@ -335,11 +346,22 @@ static bool datum_is_anomalous(
     double stddev,
     size_t datum)
 {
-    // TODO
+    #if 0 // TODO
+    boost::math::normal_distribution normal(mean, stddev);
+    boost::math::poisson_distribution poisson(mean);
+
+    return boost::math::cdf(normal, datum) < ANOMALOUS_THRESHOLD ||
+        boost::math::cdf(boost::math::complement(normal, datum)) <
+            ANOMALOUS_THRESHOLD ||
+        boost::math::cdf(poisson, datum) < ANOMALOUS_THRESHOLD ||
+        boost::math::cdf(boost::math::complement(normal, datum)) <
+            ANOMALOUS_THRESHOLD;
+    #else
     (void)mean;
     (void)stddev;
     (void)datum;
     return false;
+    #endif
 }
 
 bool AnomalyDetector::check_for_anomalies(
