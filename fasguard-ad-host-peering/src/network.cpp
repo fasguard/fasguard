@@ -1,5 +1,5 @@
 #include <arpa/inet.h>
-//#include <boost/functional/hash.hpp> // TODO: uncomment this once we have the autoconf macros for boost
+#include <boost/functional/hash.hpp>
 #include <cstring>
 
 #include "network.hpp"
@@ -59,8 +59,6 @@ namespace std
     size_t hash<::IPAddress>::operator()(
         ::IPAddress const & addr) const
     {
-        // TODO: remove the dummy implementation once boost is working
-        #if 0
         size_t seed = 0;
 
         ::boost::hash_combine(seed, addr.getVersion());
@@ -71,9 +69,5 @@ namespace std
         }
 
         return seed;
-        #else
-        (void)addr;
-        return 0;
-        #endif
     }
 }

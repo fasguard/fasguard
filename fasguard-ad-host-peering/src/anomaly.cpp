@@ -18,8 +18,8 @@
 */
 
 #include <cmath>
-//#include <boost/math/distributions/normal.hpp> // TODO: uncomment
-//#include <boost/math/distributions/poisson.hpp> // TODO: uncomment
+#include <boost/math/distributions/normal.hpp>
+#include <boost/math/distributions/poisson.hpp>
 
 #include "anomaly.hpp"
 #include "logging.hpp"
@@ -352,9 +352,8 @@ static bool datum_is_anomalous(
     double stddev,
     size_t datum)
 {
-    #if 0 // TODO
-    boost::math::normal_distribution normal(mean, stddev);
-    boost::math::poisson_distribution poisson(mean);
+    boost::math::normal normal(mean, stddev);
+    boost::math::poisson poisson(mean);
 
     return boost::math::cdf(normal, datum) < ANOMALOUS_THRESHOLD ||
         boost::math::cdf(boost::math::complement(normal, datum)) <
@@ -362,12 +361,6 @@ static bool datum_is_anomalous(
         boost::math::cdf(poisson, datum) < ANOMALOUS_THRESHOLD ||
         boost::math::cdf(boost::math::complement(normal, datum)) <
             ANOMALOUS_THRESHOLD;
-    #else
-    (void)mean;
-    (void)stddev;
-    (void)datum;
-    return false;
-    #endif
 }
 
 bool AnomalyDetector::check_for_anomalies(
