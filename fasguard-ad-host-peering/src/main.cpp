@@ -3,6 +3,7 @@
     @brief Main code for the host-peering anomaly detector.
 */
 
+#include <cstdio>
 #include <cstdlib>
 #include <getopt.h>
 #include <new>
@@ -21,11 +22,33 @@
 
 /**
     @brief Print a help message.
-
-    @todo Actually print a help message here.
 */
-static void print_help()
+static void print_help(
+    int argc,
+    char **argv,
+    char const * default_interface)
 {
+    (void)argc;
+
+    fprintf(stderr, "Usage: %s [<option>...]\n", argv[0]);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr,
+        "\t-f | --filter <filter>\tFilter traffic before processing.\n"
+        "\t\tSee pcap-filter(7) for the format of the filter.\n"
+        "\t\tDefault: none.\n");
+    fprintf(stderr,
+        "\t-h | --help\tPrint this help message.\n");
+    fprintf(stderr,
+        "\t-i | --interface <interface>\tSpecify the interface to listen on.\n");
+    if (default_interface == NULL)
+    {
+        fprintf(stderr, "\t\tThis option is mandatory.\n");
+    }
+    else
+    {
+        fprintf(stderr, "\t\tDefault: %s.\n", default_interface);
+    }
 }
 
 /**
@@ -84,7 +107,8 @@ int main(
 
     // Parse the command-line arguments.
     char const * filter = NULL;
-    char const * interface = pcap_lookupdev(pcap_errbuf);
+    char const * default_interface = pcap_lookupdev(pcap_errbuf);
+    char const * interface = default_interface;
 
     static char const options[] = "f:hi:";
     static struct option const long_options[] = {
@@ -96,14 +120,14 @@ int main(
     int opt;
     while ((opt = getopt_long(argc, argv, options, long_options, NULL)) != -1)
     {
-        switch (getopt_long(argc, argv, options, long_options, NULL))
+        switch (opt)
         {
             case 'f':
                 filter = optarg;
                 break;
 
             case 'h':
-                print_help();
+                print_help(argc, argv, default_interface);
                 goto done;
 
             case 'i':
