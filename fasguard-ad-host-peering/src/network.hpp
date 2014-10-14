@@ -106,6 +106,9 @@ protected:
 
 namespace std
 {
+    /**
+        @brief Provide a hash class for #IPAddress.
+    */
     template<>
     struct hash<::IPAddress>
     {
