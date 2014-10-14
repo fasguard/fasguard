@@ -170,7 +170,9 @@ bool AnomalyDetector::is_anomalous(
     return (bool)mAnomalous.count(addr);
 }
 
-/** In-place subtract a timeval from another timeval. */
+/**
+    @brief In-place subtract a timeval from another timeval.
+*/
 static struct timeval & operator-=(
     struct timeval & x,
     struct timeval const & y)
@@ -190,7 +192,9 @@ static struct timeval & operator-=(
     return x;
 }
 
-/** Multiply a timeval by an integer-like type. */
+/**
+    @brief Multiply a timeval by an integer-like type.
+*/
 template<typename Integer>
 static struct timeval operator*(
     struct timeval const & x,
@@ -208,7 +212,9 @@ static struct timeval operator*(
     return result;
 }
 
-/** Determine if a timeval is greater than or equal to another timeval. */
+/**
+    @brief Determine if a timeval is greater than or equal to another timeval.
+*/
 static bool operator>=(
     struct timeval const & x,
     struct timeval const & y)
