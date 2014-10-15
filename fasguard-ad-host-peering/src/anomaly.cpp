@@ -318,10 +318,22 @@ void AnomalyDetector::process_host(
 
     if (check_for_anomalies(host, histogram, num_peers))
     {
+        if (!is_anomalous(host))
+        {
+            LOG(LOG_DEBUG, "Host became anomalous: %s",
+                host.toString().c_str());
+        }
+
         mAnomalous.insert(host);
     }
     else
     {
+        if (is_anomalous(host))
+        {
+            LOG(LOG_DEBUG, "Host is no longer anomalous: %s",
+                host.toString().c_str());
+        }
+
         mAnomalous.erase(host);
     }
 }
