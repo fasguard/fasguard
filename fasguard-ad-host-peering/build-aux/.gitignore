@@ -1,3 +1,5 @@
+compile
 depcomp
 install-sh
 missing
+test-driver
