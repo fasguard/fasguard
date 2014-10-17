@@ -56,7 +56,7 @@ std::string IPAddress::toString() const
 
 namespace std
 {
-    size_t hash<::IPAddress>::operator()(
+    size_t hash<IPAddress>::operator()(
         ::IPAddress const & addr) const
     {
         size_t seed = 0;

@@ -200,10 +200,8 @@ static struct timeval operator*(
     struct timeval const & x,
     Integer const & y)
 {
-    struct timeval result = {
-        .tv_sec = (time_t)(x.tv_sec * y),
-        .tv_usec = 0,
-    };
+    struct timeval result;
+    result.tv_sec = (time_t)(x.tv_sec * y);
 
     uintmax_t usec = (uintmax_t)x.tv_usec * y;
     result.tv_sec += usec / 1000000;
