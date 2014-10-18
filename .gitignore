@@ -1,0 +1,24 @@
+# subversion's default global ignores
+*.o
+*.lo
+*.la
+\#*\#
+.*.rej
+*.rej
+.*~
+*~
+.\#*
+.DS_Store
+
+# suggested global ignores
+Thumbs.db
+.tmp
+*.pdb
+*.manifest
+desktop.ini
+~*.doc
+*.obj
+*.exe
+
+# Python ignores
+*.pyc
