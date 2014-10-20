@@ -38,3 +38,8 @@ fasguard_ad_host_peering_SOURCES = \
 .PHONY: doc
 doc: doc/Doxyfile
 	doxygen doc/Doxyfile
+
+clean-local: clean-local-doc
+.PHONY: clean-local-doc
+clean-local-doc:
+	rm -rf doc/html doc/latex
