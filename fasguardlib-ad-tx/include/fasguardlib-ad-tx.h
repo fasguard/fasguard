@@ -98,7 +98,7 @@ typedef struct _fasguard_option
 /**
     @brief Special value to indicate the end of an array of #fasguard_option_t.
 */
-fasguard_option_t const fasguard_end_of_options;
+extern fasguard_option_t const fasguard_end_of_options;
 
 
 /**
