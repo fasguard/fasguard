@@ -9,6 +9,7 @@
 
 .deps/
 .dirstamp
+.libs/
 
 *.o
 
