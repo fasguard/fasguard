@@ -41,13 +41,16 @@ static void print_help(
         "\t-h | --help\tPrint this help message.\n");
     fprintf(stderr,
         "\t-i | --interface <interface>\tSpecify the interface to listen on.\n");
-    if (default_interface == NULL)
-    {
-        fprintf(stderr, "\t\tThis option is mandatory.\n");
-    }
-    else
+    if (default_interface != NULL)
     {
         fprintf(stderr, "\t\tDefault: %s.\n", default_interface);
+    }
+    fprintf(stderr,
+        "\t-r | --read <savefile>\tSpecify the pcap savefile to read from.\n");
+    if (default_interface == NULL)
+    {
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Either --interface or --read must be specified.\n");
     }
 }
 
@@ -109,12 +112,14 @@ int main(
     char const * filter = NULL;
     char const * default_interface = pcap_lookupdev(pcap_errbuf);
     char const * interface = default_interface;
+    char const * savefile = NULL;
 
-    static char const options[] = "f:hi:";
+    static char const options[] = "f:hi:r:";
     static struct option const long_options[] = {
         {"filter", required_argument, NULL, 'f'},
         {"help", no_argument, NULL, 'h'},
         {"interface", required_argument, NULL, 'i'},
+        {"read", required_argument, NULL, 'r'},
     };
 
     int opt;
@@ -134,17 +139,28 @@ int main(
                 interface = optarg;
                 break;
 
+            case 'r':
+                savefile = optarg;
+                break;
+
             default:
                 ret = EXIT_FAILURE;
                 goto done;
         }
     }
 
-    if (interface == NULL)
+    if (interface == NULL && savefile == NULL)
     {
         LOG(LOG_ERR,
-            "A network interface was not specified and no default could be "
-            "found. Please specify a network interface (-i).");
+            "Neither a network interface nor a pcap savefile was specified, "
+            "and no default could be found. Please specify a network interface "
+            "(-i) or savefile (-r).");
+        ret = EXIT_FAILURE;
+        goto done;
+    }
+    else if (interface != NULL && savefile != NULL)
+    {
+        LOG(LOG_ERR, "Please only specify one of -i or -r.");
         ret = EXIT_FAILURE;
         goto done;
     }
@@ -152,19 +168,35 @@ int main(
 
     // Prepare to sniff packets from the network.
     pcap_errbuf[0] = '\0';
-    pcap_handle = pcap_open_live(interface, ANOMALY_SNAPLEN, 1,
-        PCAP_READ_TIMEOUT, pcap_errbuf);
-    if (pcap_handle == NULL)
+    if (savefile != NULL)
     {
-        LOG(LOG_ERR, "Error opening network interface %s: %s", interface,
-            pcap_errbuf);
-        ret = EXIT_FAILURE;
-        goto done;
+        pcap_handle = pcap_open_offline(savefile, pcap_errbuf);
+
+        if (pcap_handle == NULL)
+        {
+            LOG(LOG_ERR, "Error opening pcap savefile \"%s\": %s", savefile,
+                pcap_errbuf);
+            ret = EXIT_FAILURE;
+            goto done;
+        }
     }
-    else if (pcap_errbuf[0] != '\0')
+    else
     {
-        LOG(LOG_WARNING, "Warning opening network interface %s: %s", interface,
-            pcap_errbuf);
+        pcap_handle = pcap_open_live(interface, ANOMALY_SNAPLEN, 1,
+            PCAP_READ_TIMEOUT, pcap_errbuf);
+
+        if (pcap_handle == NULL)
+        {
+            LOG(LOG_ERR, "Error opening network interface %s: %s", interface,
+                pcap_errbuf);
+            ret = EXIT_FAILURE;
+            goto done;
+        }
+        else if (pcap_errbuf[0] != '\0')
+        {
+            LOG(LOG_WARNING, "Warning opening network interface %s: %s", interface,
+                pcap_errbuf);
+        }
     }
 
     if (filter != NULL)
@@ -227,6 +259,10 @@ int main(
             pcap_geterr(pcap_handle));
         ret = EXIT_FAILURE;
         goto done;
+    }
+    else if (pcap_loop_ret == 0)
+    {
+        LOG(LOG_DEBUG, "No more packets to read.");
     }
 
 
