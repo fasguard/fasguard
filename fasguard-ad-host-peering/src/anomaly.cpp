@@ -112,7 +112,16 @@ void AnomalyDetector::process_packet(
 
     // Get the current generation and do inter-generation processing if needed.
     generation_t generation = getGeneration(pcap_header->ts);
-    if (generation != mCurrentGeneration)
+    if (generation < mCurrentGeneration)
+    {
+        LOG(LOG_ERR,
+            "Regressed from generation %" PRI_GENERATION_T " to %"
+                PRI_GENERATION_T ". This should not have happened.",
+            mCurrentGeneration,
+            generation);
+        return;
+    }
+    else if (generation > mCurrentGeneration)
     {
         LOG(LOG_DEBUG,
             "done with generation %" PRI_GENERATION_T
