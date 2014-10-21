@@ -9,6 +9,13 @@ AUTOMAKE_OPTIONS = \
 ACLOCAL_AMFLAGS = -I build-aux
 
 
+AM_CPPFLAGS =
+
+AM_CFLAGS = \
+	-Wall \
+	-Wextra \
+	-g
+
 AM_CXXFLAGS = \
 	-Wall \
 	-Wextra \
