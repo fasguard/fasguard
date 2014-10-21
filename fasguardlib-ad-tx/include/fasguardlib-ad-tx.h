@@ -24,11 +24,33 @@ extern "C"
 */
 typedef union _fasguard_option_value
 {
-    bool bool_val; //!< Boolean value.
-    uintmax_t uint_val; //!< Unsigned integer value.
-    intmax_t int_val; //!< Integer value.
-    double double_val; //!< Double value.
-    void * pointer_val; //!< Pointer value.
+    /**
+        @brief Boolean value.
+    */
+    bool bool_val;
+
+    /**
+       @brief Unsigned integer value.
+    */
+    uintmax_t uint_val;
+
+    /**
+        @brief Integer value.
+    */
+    intmax_t int_val;
+
+    /**
+        @brief Double value.
+    */
+    double double_val;
+
+    /**
+        @brief Pointer value.
+
+        @note The memory pointed to is the responsibility of the caller, not of
+              the library. If you allocated it, you free it.
+    */
+    void * pointer_val;
 } fasguard_option_value_t;
 
 /**
