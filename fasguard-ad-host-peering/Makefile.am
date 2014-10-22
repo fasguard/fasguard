@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = \
 	-Wall \
 	-Wno-extra-portability
 
-ACLOCAL_AMFLAGS = -I build-aux
+ACLOCAL_AMFLAGS = -I m4 -I build-aux
 
 
 AM_CPPFLAGS =

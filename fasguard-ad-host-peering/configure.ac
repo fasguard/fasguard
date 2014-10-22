@@ -3,6 +3,7 @@ AC_INIT(fasguard-ad-host-peering, 0.1, fasguard@bbn.com)
 PACKAGE_LONGNAME="Reference Anomaly Detector"
 AC_SUBST([PACKAGE_LONGNAME])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES
 AC_CONFIG_SRCDIR([src/logging.hpp])
