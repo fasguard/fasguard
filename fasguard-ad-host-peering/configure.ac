@@ -24,7 +24,11 @@ AC_SEARCH_LIBS([pcap_open_live], [pcap], [], [
     AC_MSG_FAILURE([libpcap is required])
 ])
 
-AC_CHECK_HEADERS([syslog.h], [], [
+AC_SEARCH_LIBS([fasguard_open_attack_output], [fasguardlib-ad-tx], [], [
+    AC_MSG_FAILURE([libfasguardlib-ad-tx is required])
+])
+
+AC_CHECK_HEADERS([syslog.h fasguardlib-ad-tx.h], [], [
     AC_MSG_FAILURE([a required header file is missing or does not compile properly])
 ])
 

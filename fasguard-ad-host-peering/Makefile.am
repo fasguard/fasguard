@@ -42,6 +42,9 @@ fasguard_ad_host_peering_SOURCES = \
 	src/network.cpp \
 	src/network.hpp
 
+fasguard_ad_host_peering_LDADD = \
+	-lfasguardlib-ad-tx
+
 .PHONY: doc
 doc: doc/Doxyfile
 	doxygen doc/Doxyfile
