@@ -8,3 +8,5 @@
 /config.status
 /configure
 /libtool
+/src/.deps/
+/src/.dirstamp

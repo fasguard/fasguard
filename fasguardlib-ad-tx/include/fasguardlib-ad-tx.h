@@ -69,7 +69,8 @@ typedef struct _fasguard_option
         @brief Set of flags for the option.
 
         There are currently no public flags, so this must be zero for all
-        options defined outside of this library.
+        options defined outside of this library. When defined, option flags
+        will start with FASGUARD_OPTFLAG_.
     */
     uint32_t flags;
 
@@ -96,9 +97,23 @@ typedef struct _fasguard_option
 } fasguard_option_t;
 
 /**
+    @internal
+    @brief Special flag to indicate the end of an array of fasguard_option_t.
+*/
+#define FASGUARD_OPTFLAG_END_OF_OPTIONS UINT32_C(0x80000000)
+
+/**
     @brief Special value to indicate the end of an array of #fasguard_option_t.
 */
 extern fasguard_option_t const fasguard_end_of_options;
+
+/**
+    @internal
+    @brief Determine if an option (of type #fasguard_option_t) is
+           #fasguard_end_of_options.
+*/
+#define FASGUARD_IS_END_OF_OPTIONS(option) \
+    ((option).flags & FASGUARD_OPTFLAG_END_OF_OPTIONS)
 
 
 /**

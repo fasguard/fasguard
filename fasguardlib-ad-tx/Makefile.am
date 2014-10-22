@@ -32,8 +32,22 @@ noinst_PROGRAMS =
 AM_CPPFLAGS += \
 	-isystem $(top_srcdir)/include
 
+lib_LTLIBRARIES += \
+	libfasguardlib-ad-tx.la
+
 include_HEADERS += \
 	include/fasguardlib-ad-tx.h
+
+libfasguardlib_ad_tx_la_SOURCES = \
+	src/attack.c \
+	src/option.c
+
+libfasguardlib_ad_tx_la_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
+	-I$(builddir)/include
+
+libfasguardlib_ad_tx_la_LDFLAGS = \
+	-version-info 0:0:0
 
 .PHONY: doc
 doc: doc/Doxyfile
