@@ -1,3 +1,5 @@
+#include <errno.h>
+
 #include <fasguardlib-ad-tx.h>
 
 struct fasguard_attack_output
@@ -28,7 +30,7 @@ fasguard_attack_output_t fasguard_open_attack_output(
         switch (options[i].key)
         {
             default:
-                // TODO: log or note the error
+                errno = EINVAL;
                 return NULL;
         }
     }
@@ -61,7 +63,7 @@ fasguard_attack_group_t fasguard_start_attack_group(
         switch (options[i].key)
         {
             default:
-                // TODO: log or note the error
+                errno = EINVAL;
                 return NULL;
         }
     }
@@ -94,7 +96,7 @@ fasguard_attack_instance_t fasguard_start_attack_instance(
         switch (options[i].key)
         {
             default:
-                // TODO: log or note the error
+                errno = EINVAL;
                 return NULL;
         }
     }
@@ -131,7 +133,7 @@ bool add_packet_to_attack_instance(
         switch (options[i].key)
         {
             default:
-                // TODO: log or note the error
+                errno = EINVAL;
                 return NULL;
         }
     }

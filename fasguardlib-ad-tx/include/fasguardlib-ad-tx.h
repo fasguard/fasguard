@@ -161,7 +161,8 @@ typedef void * fasguard_attack_instance_t;
     A separate program may move files from <tt>new/</tt> to <tt>cur/</tt>, but
     that is outside the scope of this library.
 
-    @return A valid output handle, or NULL if an error occured.
+    @return A valid output handle, or NULL if an error occured. If NULL is
+            returned, errno will be set to indicate the error.
 */
 fasguard_attack_output_t fasguard_open_attack_output(
     char const * directory,
@@ -176,7 +177,8 @@ fasguard_attack_output_t fasguard_open_attack_output(
     @note It is an error to use an output stream after this function is called
           on it.
 
-    @return True on success, false on error.
+    @return True on success, false on error. If false is returned, errno will
+            be set to indicate the error.
 */
 bool fasguard_close_attack_output(
     fasguard_attack_output_t output);
@@ -184,7 +186,8 @@ bool fasguard_close_attack_output(
 /**
     @brief Start a new group of related attacks.
 
-    @return The new attack group's ID, or NULL on error.
+    @return The new attack group's ID, or NULL on error. If NULL is returned,
+            errno will be set to indicate the error.
 */
 fasguard_attack_group_t fasguard_start_attack_group(
     fasguard_attack_output_t output,
@@ -200,7 +203,8 @@ fasguard_attack_group_t fasguard_start_attack_group(
     @note It is an error to use an attack group after this function is called on
           it.
 
-    @return True on success, false on error.
+    @return True on success, false on error. If false is returned, errno will be
+            set to indicate the error.
 */
 bool fasguard_end_attack_group(
     fasguard_attack_group_t group);
@@ -208,7 +212,8 @@ bool fasguard_end_attack_group(
 /**
     @brief Start a new instance of an attack within the specified attack group.
 
-    @return The new attack instance's ID, or NULL on error.
+    @return The new attack instance's ID, or NULL on error. If NULL is returned,
+            errno will be set to indicate the error.
 */
 fasguard_attack_instance_t fasguard_start_attack_instance(
     fasguard_attack_group_t group,
@@ -220,7 +225,8 @@ fasguard_attack_instance_t fasguard_start_attack_instance(
     @note It is an error to use an attack instance after this function is called
           on it.
 
-    @return True on success, false on error.
+    @return True on success, false on error. If false is returned, errno will be
+            set to indicate the error.
 */
 bool fasguard_end_attack_instance(
     fasguard_attack_instance_t instance);
@@ -232,7 +238,8 @@ bool fasguard_end_attack_instance(
     @param[in] packet_length Length of @p packet.
     @param[in] packet Packet data, starting at the IP header.
     @param[in] options Options for the packet.
-    @return True on success, false on error.
+    @return True on success, false on error. If false is returned, errno will be
+            set to indicate the error.
 */
 bool add_packet_to_attack_instance(
     fasguard_attack_instance_t instance,
