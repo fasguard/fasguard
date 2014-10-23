@@ -3,8 +3,8 @@
     @brief Anomaly detection code.
 */
 
-#ifndef _HOST_PEERING_ANOMALY_H
-#define _HOST_PEERING_ANOMALY_H
+#ifndef HOST_PEERING_ANOMALY_H
+#define HOST_PEERING_ANOMALY_H
 
 #include <cinttypes>
 #include <unordered_map>

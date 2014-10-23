@@ -3,8 +3,8 @@
     @brief Additional container types.
 */
 
-#ifndef _HOST_PEERING_CONTAINER_H
-#define _HOST_PEERING_CONTAINER_H
+#ifndef HOST_PEERING_CONTAINER_H
+#define HOST_PEERING_CONTAINER_H
 
 #include <functional>
 #include <queue>

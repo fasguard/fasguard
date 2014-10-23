@@ -5,8 +5,8 @@
     This file contains macros that should be used for logging.
 */
 
-#ifndef _HOST_PEERING_LOGGING_H
-#define _HOST_PEERING_LOGGING_H
+#ifndef HOST_PEERING_LOGGING_H
+#define HOST_PEERING_LOGGING_H
 
 #include <syslog.h>
 #include <stdbool.h>

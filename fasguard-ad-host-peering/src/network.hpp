@@ -3,8 +3,8 @@
     @brief Data types for network primitives.
 */
 
-#ifndef _HOST_PEERING_NETWORK_H
-#define _HOST_PEERING_NETWORK_H
+#ifndef HOST_PEERING_NETWORK_H
+#define HOST_PEERING_NETWORK_H
 
 #include <cinttypes>
 #include <functional>

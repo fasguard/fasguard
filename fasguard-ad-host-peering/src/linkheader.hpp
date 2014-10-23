@@ -3,8 +3,8 @@
     @brief Functions for working with link-layer headers.
 */
 
-#ifndef _HOST_PEERING_LINKHEADER_H
-#define _HOST_PEERING_LINKHEADER_H
+#ifndef HOST_PEERING_LINKHEADER_H
+#define HOST_PEERING_LINKHEADER_H
 
 #include <cinttypes>
 
