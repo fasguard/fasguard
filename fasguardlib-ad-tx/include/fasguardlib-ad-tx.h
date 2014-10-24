@@ -169,6 +169,15 @@ fasguard_attack_output_t fasguard_open_attack_output(
     fasguard_option_t const * options);
 
 /**
+    @brief Flush an output stream.
+
+    @return True on success, false on error. If false is returned, errno will
+            be set to indicate the error.
+*/
+bool fasguard_flush_attack_output(
+    fasguard_attack_output_t output);
+
+/**
     @brief Flush and close an output stream.
 
     @note If there are any attack groups or instances that have been started but
