@@ -139,7 +139,7 @@ typedef void * fasguard_attack_instance_t;
       - <tt>tmp/</tt>: Temporary files.
         - <tt><em>attack-group</em>/</tt>: Directory for a single attack group.
           - <tt>instances/</tt>: Per-instance files.
-            - <tt><em>attack-instance</em>.xml</tt>: Partial STIX file for a
+            - <tt><em>attack-instance</em></tt>: Partial STIX file for a
               single instance.
           - <tt>all.xml</tt>: STIX file for the attack group.
       - <tt>new/</tt>
@@ -150,9 +150,9 @@ typedef void * fasguard_attack_instance_t;
 
     Attacks in progress are stored in the <tt>tmp/</tt> directory. Packets are
     added to the appropriate
-    <tt>tmp/<em>attack-group</em>/instances/<em>attack-instance</em>.xml</tt>
+    <tt>tmp/<em>attack-group</em>/instances/<em>attack-instance</em></tt>
     file as they become available. When an instance is done
-    (#fasguard_end_attack_instance), the <tt><em>attack-instance</em>.xml</tt> is
+    (#fasguard_end_attack_instance), the <tt><em>attack-instance</em></tt> is
     appended to the appropriate
     <tt>tmp/<em>attack-group</em>/all.xml</tt> file. When the group is done
     (#fasguard_end_attack_group), the <tt>all.xml</tt> file gets closing tags
