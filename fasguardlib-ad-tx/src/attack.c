@@ -371,10 +371,16 @@ bool fasguard_end_attack_group(
     // TODO: move group->allpath into group->attack_output->newdir
     free(group->allpath);
 
-    // TODO: rmdir group->instancesdir
+    if (rmdir(group->instancesdir) == -1)
+    {
+        last_errno = errno;
+    }
     free(group->instancesdir);
 
-    // TODO: rmdir group->groupdir
+    if (rmdir(group->groupdir) == -1)
+    {
+        last_errno = errno;
+    }
     free(group->groupdir);
 
     free(group);
@@ -454,6 +460,8 @@ bool fasguard_end_attack_instance(
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
     int last_errno = 0;
+    uint8_t buf[512];
+    ssize_t readed; // bad grammar to avoid name clash
     ssize_t written;
 
     if (instance == NULL)
@@ -475,8 +483,34 @@ bool fasguard_end_attack_instance(
         goto done_writing;
     }
 
-    // TODO: rewind instance->instancefd
-    // TODO: copy all of instance->instancefd to instance->attack_group->allfd
+    if (lseek(instance->instancefd, 0, SEEK_SET) == -1)
+    {
+        last_errno = errno;
+        goto done_writing;
+    }
+
+    // copy all of instance->instancefd to instance->attack_group->allfd
+    while ((readed = read(instance->instancefd, buf, sizeof(buf))) != 0)
+    {
+        if (readed < 0)
+        {
+            last_errno = errno;
+            goto done_writing;
+        }
+
+        written = write(instance->attack_group->allfd, buf,
+            (size_t)readed);
+        if (written < 0)
+        {
+            last_errno = errno;
+            goto done_writing;
+        }
+        else if (written != readed)
+        {
+            last_errno = EIO;
+            goto done_writing;
+        }
+    }
 
     written = write(instance->attack_group->allfd,
         fasguard_stix_incident_footer,
@@ -498,7 +532,10 @@ done_writing:
         last_errno = errno;
     }
 
-    // TODO: unlink instance->instancepath
+    if (unlink(instance->instancepath) == -1)
+    {
+        last_errno = errno;
+    }
     free(instance->instancepath);
 
     free(instance);
