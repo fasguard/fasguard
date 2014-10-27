@@ -10,6 +10,8 @@
 
 #include <fasguardlib-ad-tx.h>
 
+#include "resources.h"
+
 
 /**
     @brief Type pointed to by #fasguard_attack_output_t.
@@ -238,6 +240,7 @@ fasguard_attack_group_t fasguard_start_attack_group(
 {
     struct fasguard_attack_output * output = (struct fasguard_attack_output *)_output;
     struct fasguard_attack_group * group = NULL;
+    ssize_t written;
 
     for (size_t i = 0;
         options != NULL && !FASGUARD_IS_END_OF_OPTIONS(options[i]);
@@ -301,7 +304,18 @@ fasguard_attack_group_t fasguard_start_attack_group(
         goto error;
     }
 
-    // TODO: write XML header to group->allfd
+    written = write(group->allfd, fasguard_stix_package_header,
+        fasguard_stix_package_header_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        goto error;
+    }
+    else if ((size_t)written != fasguard_stix_package_header_strlen)
+    {
+        errno = EIO;
+        goto error;
+    }
 
     return group;
 
@@ -331,13 +345,23 @@ bool fasguard_end_attack_group(
 {
     struct fasguard_attack_group * group = (struct fasguard_attack_group *)_group;
     int last_errno = 0;
+    ssize_t written;
 
     if (group == NULL)
     {
         return true;
     }
 
-    // TODO: write XML footer to group->allfd
+    written = write(group->allfd, fasguard_stix_package_footer,
+        fasguard_stix_package_footer_strlen);
+    if (written < 0)
+    {
+        last_errno = errno;
+    }
+    else if ((size_t)written != fasguard_stix_package_footer_strlen)
+    {
+        last_errno = EIO;
+    }
 
     if (close(group->allfd) == -1)
     {
@@ -430,17 +454,45 @@ bool fasguard_end_attack_instance(
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
     int last_errno = 0;
+    ssize_t written;
 
     if (instance == NULL)
     {
         return true;
     }
 
-    // TODO: write XML header for the instance to instance->attack_group->allfd
+    written = write(instance->attack_group->allfd,
+        fasguard_stix_incident_header,
+        fasguard_stix_incident_header_strlen);
+    if (written < 0)
+    {
+        last_errno = errno;
+        goto done_writing;
+    }
+    else if ((size_t)written != fasguard_stix_incident_header_strlen)
+    {
+        last_errno = EIO;
+        goto done_writing;
+    }
+
     // TODO: rewind instance->instancefd
     // TODO: copy all of instance->instancefd to instance->attack_group->allfd
-    // TODO: write XML footer for the instance to instance->attack_group->allfd
 
+    written = write(instance->attack_group->allfd,
+        fasguard_stix_incident_footer,
+        fasguard_stix_incident_footer_strlen);
+    if (written < 0)
+    {
+        last_errno = errno;
+        goto done_writing;
+    }
+    else if ((size_t)written != fasguard_stix_incident_footer_strlen)
+    {
+        last_errno = EIO;
+        goto done_writing;
+    }
+
+done_writing:
     if (close(instance->instancefd) == -1)
     {
         last_errno = errno;
@@ -463,6 +515,7 @@ bool add_packet_to_attack_instance(
 {
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
+    ssize_t written;
 
     for (size_t i = 0;
         options != NULL && !FASGUARD_IS_END_OF_OPTIONS(options[i]);
@@ -476,9 +529,65 @@ bool add_packet_to_attack_instance(
         }
     }
 
-    // TODO: write XML for the packet to instance->instancefd
-    (void)instance;
+    written = write(instance->instancefd, fasguard_stix_packet_header,
+        fasguard_stix_packet_header_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if ((size_t)written != fasguard_stix_packet_header_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    // TODO: support probability of attack (fasguard_stix_packet_prob_attack_fmt)
+
+    // TODO: support timestamp of packet (fasguard_stix_packet_timestamp_timefmt)
+
+    written = write(instance->instancefd, fasguard_stix_packet_data_header,
+        fasguard_stix_packet_data_header_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if ((size_t)written != fasguard_stix_packet_data_header_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    // TODO: write Base64 of packet data
     (void)packet_length;
     (void)packet;
-    return false;
+
+    written = write(instance->instancefd, fasguard_stix_packet_data_footer,
+        fasguard_stix_packet_data_footer_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if ((size_t)written != fasguard_stix_packet_data_footer_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    written = write(instance->instancefd, fasguard_stix_packet_footer,
+        fasguard_stix_packet_footer_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if ((size_t)written != fasguard_stix_packet_footer_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    return true;
 }
