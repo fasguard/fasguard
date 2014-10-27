@@ -1,4 +1,5 @@
 #include <getopt.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -53,6 +54,8 @@ int main(
             header_id[0], header_id[1], header_id[2], header_id[3]);
         printf("#define RESOURCES_%ld_%ld_%ld_%ld_H\n",
             header_id[0], header_id[1], header_id[2], header_id[3]);
+
+        printf("#include <stdlib.h>\n");
     }
 
     if (include != NULL)
@@ -76,14 +79,14 @@ int main(
             return EXIT_FAILURE;
         }
 
+        char * filebasename = basename(filename);
+
         printf("%sunsigned char const %s[]%s",
             (header ? "extern " : ""),
-            basename(filename),
+            filebasename,
             (header ? ";\n" : " = {"));
 
-        free(filename);
-        filename = NULL;
-
+        uintmax_t string_length = 0;
         if (!header)
         {
             FILE * file = fopen(argv[i], "r");
@@ -91,12 +94,14 @@ int main(
             {
                 fprintf(stderr,
                     "error opening file for reading: %s\n", argv[i]);
+                free(filename);
                 return EXIT_FAILURE;
             }
 
             int c;
             while ((c = fgetc(file)) != EOF)
             {
+                ++string_length;
                 printf("%d,", c);
             }
             printf("0");
@@ -104,11 +109,24 @@ int main(
             if (fclose(file) != 0)
             {
                 fprintf(stderr, "error closing file: %s\n", argv[i]);
+                free(filename);
                 return EXIT_FAILURE;
             }
 
             printf("};\n");
         }
+
+        printf("%ssize_t const %s_strlen%s",
+            (header ? "extern " : ""),
+            filebasename,
+            (header ? ";\n" : " = "));
+
+        if (!header)
+        {
+            printf("%" PRIuMAX ";\n", string_length);
+        }
+
+        free(filename);
     }
 
     if (header)
