@@ -120,6 +120,7 @@ int main(
         {"help", no_argument, NULL, 'h'},
         {"interface", required_argument, NULL, 'i'},
         {"read", required_argument, NULL, 'r'},
+        {NULL, 0, NULL, 0},
     };
 
     int opt;
