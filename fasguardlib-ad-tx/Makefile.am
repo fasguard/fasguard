@@ -32,6 +32,46 @@ noinst_PROGRAMS =
 AM_CPPFLAGS += \
 	-isystem $(top_srcdir)/include
 
+noinst_PROGRAMS += \
+	resources_generator
+
+resources_generator_SOURCES = \
+	resources/resources_generator.c
+
+LIBFASGUARDLIB_AD_TX_RESOURCES =
+
+EXTRA_DIST += \
+	$(LIBFASGUARDLIB_AD_TX_RESOURCES)
+
+resources.c: resources_generator $(LIBFASGUARDLIB_AD_TX_RESOURCES)
+	$(AM_V_GEN)./resources_generator \
+		--include "\"resources.h\"" \
+		$(LIBFASGUARDLIB_AD_TX_RESOURCES) \
+		> resources.c \
+		|| { \
+			mv -f resources.c resources.c.fail; \
+			exit 1; \
+			}
+
+resources.h: resources_generator $(LIBFASGUARDLIB_AD_TX_RESOURCES)
+	$(AM_V_GEN)./resources_generator \
+		--header \
+		$(LIBFASGUARDLIB_AD_TX_RESOURCES) \
+		> resources.h \
+		|| { \
+			mv -f resources.h resources.h.fail; \
+			exit 1; \
+			}
+
+BUILT_SOURCES += \
+	resources.h
+
+CLEANFILES += \
+	resources.c \
+	resources.c.fail \
+	resources.h \
+	resources.h.fail
+
 lib_LTLIBRARIES += \
 	libfasguardlib-ad-tx.la
 
@@ -41,6 +81,10 @@ include_HEADERS += \
 libfasguardlib_ad_tx_la_SOURCES = \
 	src/attack.c \
 	src/option.c
+
+nodist_libfasguardlib_ad_tx_la_SOURCES = \
+	resources.c \
+	resources.h
 
 libfasguardlib_ad_tx_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \

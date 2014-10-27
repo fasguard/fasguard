@@ -31,6 +31,10 @@ AC_TYPE_UINTMAX_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 
+AC_CHECK_FUNCS([getopt_long], [], [
+    AC_MSG_FAILURE([a required function is missing])
+])
+
 
 AC_CONFIG_FILES([
     Makefile

@@ -8,5 +8,10 @@
 /config.status
 /configure
 /libtool
+/resources.c
+/resources.h
+/resources/.deps/
+/resources/.dirstamp
+/resources_generator
 /src/.deps/
 /src/.dirstamp
