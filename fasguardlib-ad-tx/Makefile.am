@@ -38,7 +38,17 @@ noinst_PROGRAMS += \
 resources_generator_SOURCES = \
 	resources/resources_generator.c
 
-LIBFASGUARDLIB_AD_TX_RESOURCES =
+LIBFASGUARDLIB_AD_TX_RESOURCES = \
+	$(srcdir)/resources/fasguard_stix_incident_footer \
+	$(srcdir)/resources/fasguard_stix_incident_header \
+	$(srcdir)/resources/fasguard_stix_package_footer \
+	$(srcdir)/resources/fasguard_stix_package_header \
+	$(srcdir)/resources/fasguard_stix_packet_data_footer \
+	$(srcdir)/resources/fasguard_stix_packet_data_header \
+	$(srcdir)/resources/fasguard_stix_packet_footer \
+	$(srcdir)/resources/fasguard_stix_packet_header \
+	$(srcdir)/resources/fasguard_stix_packet_prob_attack_fmt \
+	$(srcdir)/resources/fasguard_stix_packet_timestamp_timefmt
 
 EXTRA_DIST += \
 	$(LIBFASGUARDLIB_AD_TX_RESOURCES)

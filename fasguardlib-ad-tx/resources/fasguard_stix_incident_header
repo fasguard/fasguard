@@ -1,0 +1,2 @@
+                <stix:Incident xsi:type="incident:IncidentType">
+                        <incident:Related_Observables>
