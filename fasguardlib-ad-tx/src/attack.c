@@ -116,6 +116,139 @@ static char * sprintf_alloc(
     return s;
 }
 
+/**
+    @brief Write Base64-encoded data to a file descriptor.
+
+    @todo Provide a more efficient implementation of this, i.e., one
+          that doesn't do all writes in increments of one byte.
+
+    @param[in] fd File descriptor to write to.
+    @param[in] buf Buffer to write from.
+    @param[in] count Lenth of @p buf.
+    @return True on success, or false on error. If false is returned,
+            errno will be set appropriately.
+*/
+static bool write_b64(
+    int fd,
+    uint8_t const * buf,
+    size_t count)
+{
+    static char const * const b64_alphabet =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456798+/";
+    static char const b64_padding = '=';
+    static size_t const b64_line_length = 64;
+    static char const b64_eol = '\n';
+
+    // Sliding window of bits from buf. More-significant bits appeared
+    // earlier in buf than less-significant bits. Only the
+    // least-significant bits of bitbuffer are used.
+    uint_fast16_t bitbuffer;
+
+    // Number of least-significant bits in bitbuffer that have been
+    // set, including for padding purposes.
+    uint_fast8_t bits = 0;
+
+    // Number of least significant bits in bitbuffer that have been
+    // set to zero for padding purposes.
+    uint_fast8_t fakebits = 0;
+
+    // Length of the current line.
+    size_t current_line_length = 0;
+
+    char const * to_write;
+    ssize_t written;
+
+    for (size_t i = 0;
+        i < count || bits > 0;
+        ++i)
+    {
+        if (i < count)
+        {
+            bitbuffer = (bitbuffer << 8) | buf[i];
+            bits += 8;
+        }
+        else
+        {
+            bitbuffer = bitbuffer << 8;
+            bits += 8;
+            fakebits += 8;
+        }
+
+        while (bits >= 6)
+        {
+            if (bits > fakebits)
+            {
+                to_write =
+                    &b64_alphabet[(bitbuffer >> (bits - 6)) & 0x3f];
+            }
+            else
+            {
+                to_write = &b64_padding;
+            }
+
+            written = write(fd, to_write, 1);
+            if (written < 0)
+            {
+                // errno set by write()
+                return false;
+            }
+            else if (written != 1)
+            {
+                errno = EIO;
+                return false;
+            }
+            ++current_line_length;
+
+            if (b64_line_length > 0 &&
+                current_line_length >= b64_line_length)
+            {
+                written = write(fd, &b64_eol, 1);
+                if (written < 0)
+                {
+                    // errno set by write()
+                    return false;
+                }
+                else if (written != 1)
+                {
+                    errno = EIO;
+                    return false;
+                }
+
+                current_line_length = 0;
+            }
+
+            bits -= 6;
+            if (fakebits > bits)
+            {
+                fakebits = bits;
+            }
+        }
+    }
+
+    // End the last line, if line wrapping is enabled and the last
+    // line was not already ended.
+    if (b64_line_length > 0 && current_line_length > 0)
+    {
+        written = write(fd, &b64_eol, 1);
+        if (written < 0)
+        {
+            // errno set by write()
+            return false;
+        }
+        else if (written != 1)
+        {
+            errno = EIO;
+            return false;
+        }
+
+        current_line_length = 0;
+    }
+
+    return true;
+}
+
 fasguard_attack_output_t fasguard_open_attack_output(
     char const * directory,
     fasguard_option_t const * options)
@@ -596,9 +729,11 @@ bool add_packet_to_attack_instance(
         return false;
     }
 
-    // TODO: write Base64 of packet data
-    (void)packet_length;
-    (void)packet;
+    if (!write_b64(instance->instancefd, packet, packet_length))
+    {
+        // errno set by write_b64()
+        return false;
+    }
 
     written = write(instance->instancefd, fasguard_stix_packet_data_footer,
         fasguard_stix_packet_data_footer_strlen);
