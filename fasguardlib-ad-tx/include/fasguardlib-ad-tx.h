@@ -250,7 +250,7 @@ bool fasguard_end_attack_instance(
     @return True on success, false on error. If false is returned, errno will be
             set to indicate the error.
 */
-bool add_packet_to_attack_instance(
+bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_t instance,
     size_t packet_length,
     uint8_t const * packet,

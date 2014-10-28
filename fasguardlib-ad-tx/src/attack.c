@@ -715,7 +715,7 @@ done_writing:
     return errno == 0;
 }
 
-bool add_packet_to_attack_instance(
+bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_t _instance,
     size_t packet_length,
     uint8_t const * packet,
