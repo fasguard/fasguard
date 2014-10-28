@@ -73,11 +73,11 @@ static struct timeval const GENERATION_INTERVAL = {
 /**
     @brief Probability threshold under which a number is considered anomolous.
 
-    The number of peers is considered anomalous under a specific probability
-    distribution when the cumulative distribution function or survival function
-    evaluates to a value lower that this. This value must be between 0.0 and
-    1.0, though only values close to 0.0 are useful. The closer to 0.0 it is,
-    the fewer detections there will be.
+    The number of peers is considered anomalous under a specific
+    probability distribution when the survival function evaluates to a
+    value lower that this. This value must be between 0.0 and 1.0,
+    though only values close to 0.0 are useful. The closer to 0.0 it
+    is, the fewer detections there will be.
 */
 #define ANOMALOUS_THRESHOLD 4e-9
 
@@ -357,10 +357,9 @@ static bool datum_is_anomalous(
     boost::math::normal normal(mean, stddev);
     boost::math::poisson poisson(mean);
 
-    return boost::math::cdf(normal, datum) < ANOMALOUS_THRESHOLD ||
+    return
         boost::math::cdf(boost::math::complement(normal, datum)) <
-            ANOMALOUS_THRESHOLD ||
-        boost::math::cdf(poisson, datum) < ANOMALOUS_THRESHOLD ||
+            ANOMALOUS_THRESHOLD &&
         boost::math::cdf(boost::math::complement(normal, datum)) <
             ANOMALOUS_THRESHOLD;
 }
