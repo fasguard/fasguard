@@ -17,6 +17,7 @@
 */
 #define IP_VERSION(packet) (((packet)[0] & 0xf0) >> 4)
 
+
 /**
     @brief Class to represent a single IP address (v4 or v6).
 */
@@ -48,6 +49,31 @@ public:
         @sa Version
     */
     static int const DOMAINS[];
+
+    /**
+        @brief Extract IPAddresses from a packet.
+
+        @param[out] src Source address.
+        @param[out] dst Destination address.
+        @param[in] packet_length Length of @p packet.
+        @param[in] packet Packet data, starting at the layer 3 header.
+        @return True on success, false on error.
+    */
+    static bool parse_packet(
+        IPAddress & src,
+        IPAddress & dst,
+        size_t packet_length,
+        uint8_t const * packet);
+
+    /**
+        @brief Create an uninitialized IPAddress.
+
+        Do not depend on the contents of this IPAddress being at all
+        reasonable.
+    */
+    inline IPAddress()
+    {
+    }
 
     /**
         @brief Create an IPAddress from a buffer.

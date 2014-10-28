@@ -15,6 +15,49 @@ int const IPAddress::DOMAINS[] = {
     AF_INET6, // IPv6
 };
 
+bool IPAddress::parse_packet(
+    IPAddress & src,
+    IPAddress & dst,
+    size_t packet_length,
+    uint8_t const * packet)
+{
+    // Determine the IP version and address field offsets.
+    IPAddress::Version ip_version;
+    size_t src_address_offset;
+    size_t dst_address_offset;
+    if (packet_length >= 20 && IP_VERSION(packet) == 4)
+    {
+        ip_version = IPAddress::IPv4;
+        src_address_offset = 12;
+        dst_address_offset = 16;
+    }
+    else if (packet_length >= 40 && IP_VERSION(packet) == 6)
+    {
+        ip_version = IPAddress::IPv6;
+        src_address_offset = 8;
+        dst_address_offset = 24;
+    }
+    else
+    {
+        return false;
+    }
+
+    // Extract the IP addresses.
+    src.mVersion = ip_version;
+    memcpy(
+        src.mBytes,
+        packet + src_address_offset,
+        IPAddress::LENGTHS[ip_version]);
+
+    dst.mVersion = ip_version;
+    memcpy(
+        dst.mBytes,
+        packet + dst_address_offset,
+        IPAddress::LENGTHS[ip_version]);
+
+    return true;
+}
+
 IPAddress::IPAddress(
     IPAddress::Version version,
     uint8_t const * buffer,

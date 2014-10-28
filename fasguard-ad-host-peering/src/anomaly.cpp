@@ -133,32 +133,15 @@ void AnomalyDetector::process_packet(
         cleanup();
     }
 
-    // Determine the IP version and address field offsets.
-    IPAddress::Version ip_version;
-    size_t src_address_offset;
-    size_t dst_address_offset;
-    if (pcap_header->caplen >= layer2_hlen + 20 &&
-        IP_VERSION(packet + layer2_hlen) == 4)
-    {
-        ip_version = IPAddress::IPv4;
-        src_address_offset = 12;
-        dst_address_offset = 16;
-    }
-    else if (pcap_header->caplen >= layer2_hlen + 40 &&
-        IP_VERSION(packet + layer2_hlen) == 6)
-    {
-        ip_version = IPAddress::IPv6;
-        src_address_offset = 8;
-        dst_address_offset = 24;
-    }
-    else
+    // Extract the IP addresses.
+    IPAddress srcAddress;
+    IPAddress dstAddress;
+    if (!IPAddress::parse_packet(
+        srcAddress, dstAddress,
+        pcap_header->caplen - layer2_hlen, packet + layer2_hlen))
     {
         return;
     }
-
-    // Extract the IP addresses.
-    IPAddress srcAddress(ip_version, packet, layer2_hlen + src_address_offset);
-    IPAddress dstAddress(ip_version, packet, layer2_hlen + dst_address_offset);
 
     if (mCurrentGeneration > 0)
     {
