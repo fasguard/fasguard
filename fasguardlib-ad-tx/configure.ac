@@ -20,6 +20,14 @@ AC_PROG_MAKE_SET
 AC_PROG_LN_S
 
 
+AC_SEARCH_LIBS([uuid_generate], [uuid], [], [
+    AC_MSG_FAILURE([libuuid is required])
+])
+
+AC_CHECK_HEADERS([uuid/uuid.h], [], [
+    AC_MSG_FAILURE([a required header file is missing or does not compile properly])
+])
+
 AC_TYPE_INTMAX_T
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T

@@ -7,10 +7,19 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <uuid/uuid.h>
 
 #include <fasguardlib-ad-tx.h>
 
 #include "resources.h"
+
+
+/**
+    @brief Length of a serialized UUID, in characters.
+
+    @note This does not include the terminating NUL byte.
+*/
+#define UUID_CHAR_LENGTH 36
 
 
 /**
@@ -45,6 +54,11 @@ struct fasguard_attack_group
     struct fasguard_attack_output * attack_output;
 
     /**
+        @brief ID of the attack group.
+    */
+    uuid_t id;
+
+    /**
         @brief Path for <tt>tmp/<em>attack-group</em>/</tt>.
     */
     char * groupdir;
@@ -63,6 +77,11 @@ struct fasguard_attack_group
         @brief File descriptor corresponding to #allpath.
     */
     int allfd;
+
+    /**
+        @brief Path for <tt>new/<em>attack-group</em>.xml</tt>.
+    */
+    char * alldonepath;
 };
 
 struct fasguard_attack_instance
@@ -373,6 +392,7 @@ fasguard_attack_group_t fasguard_start_attack_group(
 {
     struct fasguard_attack_output * output = (struct fasguard_attack_output *)_output;
     struct fasguard_attack_group * group = NULL;
+    char id_str[UUID_CHAR_LENGTH + 1];
     ssize_t written;
 
     for (size_t i = 0;
@@ -399,6 +419,10 @@ fasguard_attack_group_t fasguard_start_attack_group(
     group->instancesdir = NULL;
     group->allpath = NULL;
     group->allfd = -1;
+    group->alldonepath = NULL;
+
+    uuid_generate(group->id);
+    uuid_unparse(group->id, id_str);
 
     group->groupdir = sprintf_alloc("%s/XXXXXX", output->tmpdir);
     if (group->groupdir == NULL)
@@ -437,6 +461,14 @@ fasguard_attack_group_t fasguard_start_attack_group(
         goto error;
     }
 
+    group->alldonepath = sprintf_alloc("%s/%s.xml", output->newdir,
+        id_str);
+    if (group->alldonepath == NULL)
+    {
+        // errno set by sprintf_alloc()
+        goto error;
+    }
+
     written = write(group->allfd, fasguard_stix_package_header,
         fasguard_stix_package_header_strlen);
     if (written < 0)
@@ -466,6 +498,8 @@ error:
         {
             close(group->allfd);
         }
+
+        free(group->alldonepath);
 
         free(group);
     }
@@ -501,8 +535,12 @@ bool fasguard_end_attack_group(
         last_errno = errno;
     }
 
-    // TODO: move group->allpath into group->attack_output->newdir
+    if (rename(group->allpath, group->alldonepath) == -1)
+    {
+        last_errno = errno;
+    }
     free(group->allpath);
+    free(group->alldonepath);
 
     if (rmdir(group->instancesdir) == -1)
     {
