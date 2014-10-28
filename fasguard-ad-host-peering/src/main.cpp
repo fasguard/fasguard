@@ -8,10 +8,14 @@
 #include <getopt.h>
 #include <new>
 #include <pcap/pcap.h>
+#include <unordered_map>
+
+#include <fasguardlib-ad-tx.h>
 
 #include "anomaly.hpp"
 #include "linkheader.hpp"
 #include "logging.hpp"
+#include "network.hpp"
 
 
 /**
@@ -47,6 +51,9 @@ static void print_help(
     }
     fprintf(stderr,
         "\t-r | --read <savefile>\tSpecify the pcap savefile to read from.\n");
+    fprintf(stderr,
+        "\t-o | --output <directory>\tDirectory to write STIX files to.\n"
+        "\t\tThis option is mandatory.\n");
     if (default_interface == NULL)
     {
         fprintf(stderr, "\n");
@@ -55,16 +62,166 @@ static void print_help(
 }
 
 /**
+    @brief Data for a single attack group.
+*/
+struct attack_group_data_t
+{
+    /**
+        @brief Handle for the group.
+    */
+    fasguard_attack_group_t group;
+
+    /**
+        @brief Map from IP to attack instance.
+    */
+    std::unordered_map<IPAddress, fasguard_attack_instance_t> instances;
+};
+
+/**
     @brief Data to pass to #packet_callback.
 */
 struct packet_callback_data_t
 {
+    /**
+        @brief Initialize values to their defaults.
+    */
+    packet_callback_data_t()
+    :
+        pcap_handle(NULL),
+        error(false),
+        layer2_hlen_callback(NULL),
+        anomaly_detector(NULL),
+        attack_output(NULL),
+        attack_groups()
+    {
+    }
+
+    /**
+        @brief Pcap handle.
+    */
+    pcap_t * pcap_handle;
+
+    /**
+        @brief Whether or not there was an error while processing
+               packets.
+    */
+    bool error;
+
     /** @brief Callback to get the layer 2 header length. */
     layer2_hlen_t layer2_hlen_callback;
 
     /** @brief Anomaly detector. */
     AnomalyDetector * anomaly_detector;
+
+    /**
+        @brief Handle for attack output stream.
+    */
+    fasguard_attack_output_t attack_output;
+
+    /**
+        @brief Map from IP to attack group.
+    */
+    std::unordered_map<IPAddress, attack_group_data_t> attack_groups;
+
 };
+
+/**
+*/
+static void handle_attacks(
+    packet_callback_data_t * packet_callback_data,
+    IPAddress const & ip1,
+    IPAddress const & ip2,
+    struct pcap_pkthdr const * pcap_header,
+    size_t layer2_hlen,
+    uint8_t const * packet)
+{
+    bool const anomalous =
+        packet_callback_data->anomaly_detector->is_anomalous(ip1);
+
+    attack_group_data_t * group = NULL;
+    auto group_it = packet_callback_data->attack_groups.find(ip1);
+    if (group_it != packet_callback_data->attack_groups.end())
+    {
+        group = &group_it->second;
+
+        if (!anomalous)
+        {
+            for (auto instance_pair : group->instances)
+            {
+                if (!fasguard_end_attack_instance(instance_pair.second))
+                {
+                    // TODO: log
+
+                    packet_callback_data->error = true;
+                    pcap_breakloop(packet_callback_data->pcap_handle);
+                }
+            }
+            group->instances.clear();
+
+            if (!fasguard_end_attack_group(group->group))
+            {
+                // TODO: log
+
+                packet_callback_data->error = true;
+                pcap_breakloop(packet_callback_data->pcap_handle);
+            }
+
+            packet_callback_data->attack_groups.erase(group_it);
+
+            return;
+        }
+    }
+    else
+    {
+        if (!anomalous)
+        {
+            return;
+        }
+
+        group = &packet_callback_data->attack_groups[ip1];
+        group->group = fasguard_start_attack_group(
+            packet_callback_data->attack_output,
+            NULL);
+        if (group->group == NULL)
+        {
+            // TODO: log
+
+            packet_callback_data->attack_groups.erase(ip1);
+
+            return;
+        }
+    }
+
+    fasguard_attack_instance_t instance = NULL;
+    auto instance_it = group->instances.find(ip2);
+    if (instance_it != group->instances.end())
+    {
+        instance = &instance_it->second;
+    }
+    else
+    {
+        instance = fasguard_start_attack_instance(
+            group->group,
+            NULL);
+        if (instance == NULL)
+        {
+            // TODO: log
+
+            return;
+        }
+
+        group->instances[ip2] = instance;
+    }
+
+    if (!fasguard_add_packet_to_attack_instance(
+        instance,
+        pcap_header->caplen - layer2_hlen,
+        packet + layer2_hlen,
+        NULL))
+    {
+        // TODO: log error from errno
+    }
+}
 
 /**
     @brief Handle a single packet.
@@ -84,6 +241,22 @@ static void packet_callback(
 
     packet_callback_data->anomaly_detector->process_packet(
         h, layer2_hlen, bytes);
+
+    IPAddress srcAddress;
+    IPAddress dstAddress;
+    if (IPAddress::parse_packet(
+        srcAddress, dstAddress,
+        h->caplen - layer2_hlen, bytes + layer2_hlen))
+    {
+        handle_attacks(
+            packet_callback_data,
+            srcAddress, dstAddress,
+            h, layer2_hlen, bytes);
+        handle_attacks(
+            packet_callback_data,
+            dstAddress, srcAddress,
+            h, layer2_hlen, bytes);
+    }
 }
 
 /**
@@ -97,12 +270,8 @@ int main(
 {
     int ret = EXIT_SUCCESS;
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t * pcap_handle = NULL;
     int link_layer_header_type;
-    packet_callback_data_t packet_callback_data = {
-        .layer2_hlen_callback = NULL,
-        .anomaly_detector = NULL,
-    };
+    packet_callback_data_t packet_callback_data;
     int pcap_loop_ret;
 
     OPEN_LOG();
@@ -112,13 +281,15 @@ int main(
     char const * filter = NULL;
     char const * default_interface = pcap_lookupdev(pcap_errbuf);
     char const * interface = default_interface;
+    char const * output_directory = NULL;
     char const * savefile = NULL;
 
-    static char const options[] = "f:hi:r:";
+    static char const options[] = "f:hi:o:r:";
     static struct option const long_options[] = {
         {"filter", required_argument, NULL, 'f'},
         {"help", no_argument, NULL, 'h'},
         {"interface", required_argument, NULL, 'i'},
+        {"output", required_argument, NULL, 'o'},
         {"read", required_argument, NULL, 'r'},
         {NULL, 0, NULL, 0},
     };
@@ -138,6 +309,10 @@ int main(
 
             case 'i':
                 interface = optarg;
+                break;
+
+            case 'o':
+                output_directory = optarg;
                 break;
 
             case 'r':
@@ -165,15 +340,22 @@ int main(
         ret = EXIT_FAILURE;
         goto done;
     }
+    else if (output_directory == NULL)
+    {
+        LOG(LOG_ERR, "An output directory (-o) must be specified.");
+        ret = EXIT_FAILURE;
+        goto done;
+    }
 
 
     // Prepare to sniff packets from the network.
     pcap_errbuf[0] = '\0';
     if (savefile != NULL)
     {
-        pcap_handle = pcap_open_offline(savefile, pcap_errbuf);
+        packet_callback_data.pcap_handle =
+            pcap_open_offline(savefile, pcap_errbuf);
 
-        if (pcap_handle == NULL)
+        if (packet_callback_data.pcap_handle == NULL)
         {
             LOG(LOG_ERR, "Error opening pcap savefile \"%s\": %s", savefile,
                 pcap_errbuf);
@@ -183,10 +365,11 @@ int main(
     }
     else
     {
-        pcap_handle = pcap_open_live(interface, ANOMALY_SNAPLEN, 1,
+        packet_callback_data.pcap_handle = pcap_open_live(
+            interface, ANOMALY_SNAPLEN, 1,
             PCAP_READ_TIMEOUT, pcap_errbuf);
 
-        if (pcap_handle == NULL)
+        if (packet_callback_data.pcap_handle == NULL)
         {
             LOG(LOG_ERR, "Error opening network interface %s: %s", interface,
                 pcap_errbuf);
@@ -203,19 +386,20 @@ int main(
     if (filter != NULL)
     {
         struct bpf_program filter_compiled;
-        if (pcap_compile(pcap_handle, &filter_compiled, filter, 1,
-            PCAP_NETMASK_UNKNOWN) < 0)
+        if (pcap_compile(packet_callback_data.pcap_handle,
+            &filter_compiled, filter, 1, PCAP_NETMASK_UNKNOWN) < 0)
         {
             LOG(LOG_ERR, "Error compiling pcap filter \"%s\": %s", filter,
-                pcap_geterr(pcap_handle));
+                pcap_geterr(packet_callback_data.pcap_handle));
             ret = EXIT_FAILURE;
             goto done;
         }
 
-        if (pcap_setfilter(pcap_handle, &filter_compiled) < 0)
+        if (pcap_setfilter(packet_callback_data.pcap_handle,
+            &filter_compiled) < 0)
         {
             LOG(LOG_ERR, "Error applying the pcap filter: %s",
-                pcap_geterr(pcap_handle));
+                pcap_geterr(packet_callback_data.pcap_handle));
             ret = EXIT_FAILURE;
             goto done;
         }
@@ -223,7 +407,8 @@ int main(
         pcap_freecode(&filter_compiled);
     }
 
-    link_layer_header_type = pcap_datalink(pcap_handle);
+    link_layer_header_type =
+        pcap_datalink(packet_callback_data.pcap_handle);
     switch (link_layer_header_type)
     {
         case DLT_EN10MB:
@@ -251,19 +436,34 @@ int main(
     }
 
 
+    // Open the output stream.
+    packet_callback_data.attack_output = fasguard_open_attack_output(
+        output_directory, NULL);
+    if (packet_callback_data.attack_output == NULL)
+    {
+        // TODO
+        ret = EXIT_FAILURE;
+        goto done;
+    }
+
+
     // Sniff packets and run the anomaly detector.
-    pcap_loop_ret = pcap_loop(pcap_handle, -1, packet_callback,
-        (uint8_t *)&packet_callback_data);
+    pcap_loop_ret = pcap_loop(packet_callback_data.pcap_handle, -1,
+        packet_callback, (uint8_t *)&packet_callback_data);
     if (pcap_loop_ret == -1)
     {
         LOG(LOG_ERR, "Error reading network traffic: %s",
-            pcap_geterr(pcap_handle));
+            pcap_geterr(packet_callback_data.pcap_handle));
         ret = EXIT_FAILURE;
         goto done;
     }
     else if (pcap_loop_ret == 0)
     {
         LOG(LOG_DEBUG, "No more packets to read.");
+    }
+    else if (packet_callback_data.error)
+    {
+        ret = EXIT_FAILURE;
     }
 
 
@@ -274,9 +474,39 @@ done:
         delete packet_callback_data.anomaly_detector;
     }
 
-    if (pcap_handle != NULL)
+    for (auto group_pair : packet_callback_data.attack_groups)
     {
-        pcap_close(pcap_handle);
+        for (auto instance_pair : group_pair.second.instances)
+        {
+            if (!fasguard_end_attack_instance(instance_pair.second))
+            {
+                // TODO: log
+                ret = EXIT_FAILURE;
+            }
+        }
+        group_pair.second.instances.clear();
+
+        if (!fasguard_end_attack_group(group_pair.second.group))
+        {
+            // TODO: log
+            ret = EXIT_FAILURE;
+        }
+    }
+    packet_callback_data.attack_groups.clear();
+
+    if (packet_callback_data.attack_output != NULL)
+    {
+        if (!fasguard_close_attack_output(
+            packet_callback_data.attack_output))
+        {
+            // TODO: log the error from errno
+            ret = EXIT_FAILURE;
+        }
+    }
+
+    if (packet_callback_data.pcap_handle != NULL)
+    {
+        pcap_close(packet_callback_data.pcap_handle);
     }
 
     CLOSE_LOG();
