@@ -155,7 +155,10 @@ static void handle_attacks(
             {
                 if (!fasguard_end_attack_instance(instance_pair.second))
                 {
-                    // TODO: log
+                    LOG_PERROR_R(LOG_ERR,
+                        "Could not end attack instance %s -> %s",
+                        group_it->first.toString().c_str(),
+                        instance_pair.first.toString().c_str());
 
                     packet_callback_data->error = true;
                     pcap_breakloop(packet_callback_data->pcap_handle);
@@ -165,7 +168,9 @@ static void handle_attacks(
 
             if (!fasguard_end_attack_group(group->group))
             {
-                // TODO: log
+                LOG_PERROR_R(LOG_ERR,
+                    "Could not end attack group %s",
+                    group_it->first.toString().c_str());
 
                 packet_callback_data->error = true;
                 pcap_breakloop(packet_callback_data->pcap_handle);
@@ -189,7 +194,9 @@ static void handle_attacks(
             NULL);
         if (group->group == NULL)
         {
-            // TODO: log
+            LOG_PERROR_R(LOG_WARNING,
+                "Could not start attack group %s",
+                ip1.toString().c_str());
 
             packet_callback_data->attack_groups.erase(ip1);
 
@@ -210,7 +217,10 @@ static void handle_attacks(
             NULL);
         if (instance == NULL)
         {
-            // TODO: log
+            LOG_PERROR_R(LOG_WARNING,
+                "Could not start attack instance %s -> %s",
+                ip1.toString().c_str(),
+                ip2.toString().c_str());
 
             return;
         }
@@ -224,7 +234,10 @@ static void handle_attacks(
         packet + layer2_hlen,
         NULL))
     {
-        // TODO: log error from errno
+        LOG_PERROR_R(LOG_WARNING,
+            "Could not add packet to attack instance %s -> %s",
+            ip1.toString().c_str(),
+            ip2.toString().c_str());
     }
 }
 
@@ -446,7 +459,9 @@ int main(
         output_directory, NULL);
     if (packet_callback_data.attack_output == NULL)
     {
-        // TODO
+        LOG_PERROR_R(LOG_ERR,
+            "Error opening attack output directory %s",
+            output_directory);
         ret = EXIT_FAILURE;
         goto done;
     }
@@ -485,7 +500,10 @@ done:
         {
             if (!fasguard_end_attack_instance(instance_pair.second))
             {
-                // TODO: log
+                LOG_PERROR_R(LOG_ERR,
+                    "Could not end attack instance %s -> %s",
+                    group_pair.first.toString().c_str(),
+                    instance_pair.first.toString().c_str());
                 ret = EXIT_FAILURE;
             }
         }
@@ -493,7 +511,9 @@ done:
 
         if (!fasguard_end_attack_group(group_pair.second.group))
         {
-            // TODO: log
+            LOG_PERROR_R(LOG_ERR,
+                "Could not end attack group %s",
+                group_pair.first.toString().c_str());
             ret = EXIT_FAILURE;
         }
     }
@@ -504,7 +524,8 @@ done:
         if (!fasguard_close_attack_output(
             packet_callback_data.attack_output))
         {
-            // TODO: log the error from errno
+            LOG_PERROR_R(LOG_ERR,
+                "Error closing attack output directory");
             ret = EXIT_FAILURE;
         }
     }
