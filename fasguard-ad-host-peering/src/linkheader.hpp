@@ -26,4 +26,9 @@ size_t layer2_hlen_ethernet(
     size_t len,
     uint8_t const * packet);
 
+/** @brief #layer2_hlen_t for no layer 2 header at all. */
+size_t layer2_hlen_raw(
+    size_t len,
+    uint8_t const * packet);
+
 #endif

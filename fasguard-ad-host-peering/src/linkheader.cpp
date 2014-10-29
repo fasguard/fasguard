@@ -34,3 +34,12 @@ size_t layer2_hlen_ethernet(
         return 14;
     }
 }
+
+size_t layer2_hlen_raw(
+    size_t len,
+    uint8_t const * packet)
+{
+    (void)len;
+    (void)packet;
+    return 0;
+}

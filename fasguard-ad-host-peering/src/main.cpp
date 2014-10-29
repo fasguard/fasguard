@@ -433,6 +433,10 @@ int main(
             packet_callback_data.layer2_hlen_callback = layer2_hlen_ethernet;
             break;
 
+        case DLT_RAW:
+            packet_callback_data.layer2_hlen_callback = layer2_hlen_raw;
+            break;
+
         default:
             LOG(LOG_ERR, "Unsupported linktype with value %d",
                 link_layer_header_type);
