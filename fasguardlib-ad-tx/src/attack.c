@@ -1,4 +1,8 @@
-// TODO: make the docs in this file internal-only
+/**
+    @cond INTERNAL
+    @file
+    @brief Implement the attack output stream.
+*/
 
 #include <errno.h>
 #include <sys/types.h>
@@ -84,6 +88,9 @@ struct fasguard_attack_group
     char * alldonepath;
 };
 
+/**
+    @brief Type pointed to by #fasguard_attack_instance_t.
+*/
 struct fasguard_attack_instance
 {
     /**
@@ -801,3 +808,7 @@ bool fasguard_add_packet_to_attack_instance(
 
     return true;
 }
+
+/**
+    @endcond
+*/
