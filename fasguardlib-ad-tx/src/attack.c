@@ -125,7 +125,7 @@ static char * sprintf_alloc(
     va_list ap;
 
     va_start(ap, format);
-    int length = vsnprintf(NULL, 0, format, ap);
+    int length = vsnprintf(NULL, 0, format, ap) + 1;
     va_end(ap);
 
     char * s = malloc(length);
