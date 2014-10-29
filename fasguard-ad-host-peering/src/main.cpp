@@ -126,6 +126,11 @@ struct packet_callback_data_t
 };
 
 /**
+    @brief Handle a potential attack from @p ip1 to @p ip2.
+
+    Manage attack group and attack instance handles, and add the
+    packet to the appropriate attack instance if @p ip1 appears
+    to be attacking @p ip2.
 */
 static void handle_attacks(
     packet_callback_data_t * packet_callback_data,
