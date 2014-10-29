@@ -8,8 +8,10 @@
 #ifndef HOST_PEERING_LOGGING_H
 #define HOST_PEERING_LOGGING_H
 
+#include <errno.h>
 #include <syslog.h>
 #include <stdbool.h>
+#include <string.h>
 
 /**
     @brief Open the log for writing.
@@ -45,6 +47,29 @@
     do \
     { \
         syslog((priority), (format), ## __VA_ARGS__); \
+    } while (false)
+
+/**
+    @brief Log a message, appending a description of the error in
+           errno.
+
+    @sa LOG
+*/
+#define LOG_PERROR_R(priority, format, ...) \
+    do \
+    { \
+        char _log_perror_buf[256]; \
+        if (strerror_r(errno, _log_perror_buf, \
+            sizeof(_log_perror_buf)) == 0) \
+        { \
+            LOG((priority), format ": %s", ## __VA_ARGS__, \
+                _log_perror_buf); \
+        } \
+        else \
+        { \
+            LOG((priority), format ": error code %d", \
+                ## __VA_ARGS__, errno); \
+        } \
     } while (false)
 
 #endif
