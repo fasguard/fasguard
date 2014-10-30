@@ -347,6 +347,45 @@ static double stddev_calc(
 }
 
 /**
+    @brief Determine if @p datum is anomalous under the normal
+           distribution, given @p mean and @p stddev.
+*/
+static bool datum_is_anomalous_normal(
+    double mean,
+    double stddev,
+    size_t datum)
+{
+    if (stddev <= 0.0)
+    {
+        // Anything other than the mean is anomalous. Use double
+        // comparison instead of integer comparison in case of large
+        // values.
+        return round(mean) != (double)datum;
+    }
+
+    boost::math::normal normal(mean, stddev);
+
+    return
+        boost::math::cdf(boost::math::complement(normal, datum)) <
+            ANOMALOUS_THRESHOLD;
+}
+
+/**
+    @brief Determine if @p datum is anomalous under the poisson
+           distribution, given @p mean.
+*/
+static bool datum_is_anomalous_poisson(
+    double mean,
+    size_t datum)
+{
+    boost::math::poisson poisson(mean);
+
+    return
+        boost::math::cdf(boost::math::complement(poisson, datum)) <
+            ANOMALOUS_THRESHOLD;
+}
+
+/**
     @brief Determine if @p datum is anomalous, given @p mean and @p stddev.
 */
 static bool datum_is_anomalous(
@@ -354,14 +393,19 @@ static bool datum_is_anomalous(
     double stddev,
     size_t datum)
 {
-    boost::math::normal normal(mean, stddev);
-    boost::math::poisson poisson(mean);
+    if (mean <= 0.0)
+    {
+        // Datum should have already been integrated into mean so this
+        // situation should not be possible.
+        LOG(LOG_ERR,
+            "Invalid distribution "
+            "[mean = %g, stddev = %g, datum = %zu].",
+            mean, stddev, datum);
+        return true;
+    }
 
-    return
-        boost::math::cdf(boost::math::complement(normal, datum)) <
-            ANOMALOUS_THRESHOLD &&
-        boost::math::cdf(boost::math::complement(normal, datum)) <
-            ANOMALOUS_THRESHOLD;
+    return datum_is_anomalous_normal(mean, stddev, datum) &&
+        datum_is_anomalous_poisson(mean, datum);
 }
 
 bool AnomalyDetector::check_for_anomalies(
