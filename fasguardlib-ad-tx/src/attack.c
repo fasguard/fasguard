@@ -15,6 +15,7 @@
 
 #include <fasguardlib-ad-tx.h>
 
+#include "macros.h"
 #include "resources.h"
 
 
@@ -118,6 +119,11 @@ struct fasguard_attack_instance
     calling free() on this string. NULL is returned on error, and
     errno is set appropriately.
 */
+static char * sprintf_alloc(
+    char const * format,
+    ...)
+    FORMAT_PRINTF(1, 2);
+
 static char * sprintf_alloc(
     char const * format,
     ...)

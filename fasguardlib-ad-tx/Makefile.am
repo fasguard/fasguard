@@ -90,6 +90,7 @@ include_HEADERS += \
 
 libfasguardlib_ad_tx_la_SOURCES = \
 	src/attack.c \
+	src/macros.h \
 	src/option.c
 
 nodist_libfasguardlib_ad_tx_la_SOURCES = \
