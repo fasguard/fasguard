@@ -130,6 +130,12 @@ protected:
     uint8_t mBytes[16];
 };
 
+/**
+    @brief Compute the hash of an #IPAddress.
+*/
+size_t hash_value(
+    ::IPAddress const & addr);
+
 namespace std
 {
     /**

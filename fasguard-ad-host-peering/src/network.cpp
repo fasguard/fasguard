@@ -97,20 +97,26 @@ std::string IPAddress::toString() const
     return std::string(s);
 }
 
+size_t hash_value(
+    IPAddress const & addr)
+{
+    size_t seed = 0;
+
+    boost::hash_combine(seed, addr.getVersion());
+
+    for (size_t i = 0; i < addr.getLength(); ++i)
+    {
+        boost::hash_combine(seed, addr.getBytes()[i]);
+    }
+
+    return seed;
+}
+
 namespace std
 {
     size_t hash<IPAddress>::operator()(
         ::IPAddress const & addr) const
     {
-        size_t seed = 0;
-
-        ::boost::hash_combine(seed, addr.getVersion());
-
-        for (size_t i = 0; i < addr.getLength(); ++i)
-        {
-            ::boost::hash_combine(seed, addr.getBytes()[i]);
-        }
-
-        return seed;
+        return ::hash_value(addr);
     }
 }
