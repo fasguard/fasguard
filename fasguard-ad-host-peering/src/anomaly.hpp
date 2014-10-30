@@ -6,13 +6,17 @@
 #ifndef HOST_PEERING_ANOMALY_H
 #define HOST_PEERING_ANOMALY_H
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include <cinttypes>
-#include <unordered_map>
 #include <pcap/pcap.h>
 #include <sys/time.h>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
-#include "container.hpp"
 #include "network.hpp"
 
 /**
@@ -215,13 +219,34 @@ protected:
     std::unordered_map<IPAddress, Histogram> mHistograms;
 
     /**
-        @brief Priority queue used to find the IPAddress that was last seen
-               the greatest number of generations ago.
+        @brief Store when each IPAddress was last seen.
+
+        This is a container of std::pair<generation_t, IPAddress>,
+        with an ordered non-unique index on the generation and a
+        hashed unique index on the IPAddress. The first index enables
+        finding IPAddresses that haven't been updated in a long time.
+        The second index enables updating the generation for a
+        specific IPAddress.
     */
-    mapped_priority_queue<
-        generation_t,
-        IPAddress,
-        std::greater<generation_t>>
+    boost::multi_index::multi_index_container<
+        std::pair<generation_t, IPAddress>,
+        boost::multi_index::indexed_by<
+            boost::multi_index::ordered_non_unique<
+                boost::multi_index::member<
+                    std::pair<generation_t, IPAddress>,
+                    generation_t,
+                    &std::pair<generation_t, IPAddress>::first
+                    >
+                >,
+            boost::multi_index::hashed_unique<
+                boost::multi_index::member<
+                    std::pair<generation_t, IPAddress>,
+                    IPAddress,
+                    &std::pair<generation_t, IPAddress>::second
+                    >
+                >
+            >
+        >
         mLastSeen;
 
     /**

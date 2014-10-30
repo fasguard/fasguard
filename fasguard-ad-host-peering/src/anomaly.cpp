@@ -257,22 +257,56 @@ void AnomalyDetector::cleanup()
         return;
     }
 
-    while (!mLastSeen.empty() &&
-        mLastSeen.top().first < mCurrentGeneration - MAX_EMPTY_GENERATIONS)
+    // Scan mLastSeen in ascending generation order, removing data for
+    // older generations.
+    for (auto it = mLastSeen.get<0>().begin();
+        it != mLastSeen.get<0>().end() &&
+            it->first < mCurrentGeneration - MAX_EMPTY_GENERATIONS;
+        it = mLastSeen.get<0>().erase(it))
     {
-        LOG(LOG_DEBUG, "Removing histogram for %s",
-            mLastSeen.top().second.toString().c_str());
-        mPeers.erase(mLastSeen.top().second);
-        mHistograms.erase(mLastSeen.top().second);
-        mLastSeen.pop();
+        LOG(LOG_DEBUG,
+            "Removing histogram for %s "
+            "from generation %" PRI_GENERATION_T " "
+            "(%" PRI_GENERATION_T " generations ago)",
+            it->second.toString().c_str(),
+            it->first,
+            mCurrentGeneration - it->first);
+        mPeers.erase(it->second);
+        mHistograms.erase(it->second);
     }
 }
 
 void AnomalyDetector::process_host(
     IPAddress const & host)
 {
-    Histogram & histogram = mHistograms[host];
-    if (histogram.generation >= mCurrentGeneration - 1)
+    auto peers_it = mPeers.find(host);
+    auto histogram_it = mHistograms.find(host);
+
+    if (peers_it == mPeers.end() && histogram_it == mHistograms.end())
+    {
+        // Nothing to process yet.
+        return;
+    }
+
+    Histogram * histogram;
+    if (histogram_it == mHistograms.end())
+    {
+        // Make a new histogram.
+        histogram = &mHistograms[host];
+
+        // Set the histogram's generation to one before when the host
+        // was last (and first) seen. It will be incremented to the
+        // correct value below. NOTE: until it's incremented, the
+        // below code must correctly handle integer wrap-around.
+        histogram->generation =
+            mLastSeen.get<1>().find(host)->first - 1;
+    }
+    else
+    {
+        histogram = &histogram_it->second;
+    }
+
+    if (histogram->generation + 1 >= mCurrentGeneration)
     {
         // The histogram is already up to date.
         return;
@@ -281,32 +315,30 @@ void AnomalyDetector::process_host(
     // Get the number of peers for the generation after the histogram was last
     // updated.
     size_t num_peers;
-    std::unordered_map<IPAddress, std::unordered_set<IPAddress>>::const_iterator
-        peers_iterator = mPeers.find(host);
-    if (peers_iterator == mPeers.cend())
+    if (peers_it == mPeers.end())
     {
         num_peers = 0;
     }
     else
     {
-        num_peers = peers_iterator->second.size();
-        mPeers.erase(peers_iterator);
+        num_peers = peers_it->second.size();
+        mPeers.erase(peers_it);
     }
 
     // Update the histogram for the generation after the histogram was last
     // updated.
-    histogram.next_value(num_peers);
-    ++histogram.generation;
+    histogram->next_value(num_peers);
+    ++histogram->generation;
 
     // Update the histogram for any generations where the host was not seen.
-    while (histogram.generation < mCurrentGeneration - 1)
+    while (histogram->generation + 1 < mCurrentGeneration)
     {
         num_peers = 0;
-        histogram.next_value(num_peers);
-        ++histogram.generation;
+        histogram->next_value(num_peers);
+        ++histogram->generation;
     }
 
-    if (check_for_anomalies(host, histogram, num_peers))
+    if (check_for_anomalies(host, *histogram, num_peers))
     {
         if (!is_anomalous(host))
         {
@@ -447,6 +479,19 @@ void AnomalyDetector::add_peers_one_direction(
     IPAddress const & b)
 {
     mPeers[a].insert(b);
+
+    auto it = mLastSeen.get<1>().find(a);
+    if (it == mLastSeen.get<1>().end())
+    {
+        mLastSeen.get<1>().insert(
+            std::pair<generation_t, IPAddress>(mCurrentGeneration, a));
+    }
+    else if (it->first != mCurrentGeneration)
+    {
+        mLastSeen.get<1>().replace(
+            it,
+            std::pair<generation_t, IPAddress>(mCurrentGeneration, a));
+    }
 }
 
 AnomalyDetector::Histogram::Histogram()
