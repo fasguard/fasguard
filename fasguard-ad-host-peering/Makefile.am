@@ -34,7 +34,6 @@ bin_PROGRAMS += \
 fasguard_ad_host_peering_SOURCES = \
 	src/anomaly.cpp \
 	src/anomaly.hpp \
-	src/container.hpp \
 	src/linkheader.cpp \
 	src/linkheader.hpp \
 	src/logging.hpp \
