@@ -810,6 +810,8 @@ bool fasguard_add_packet_to_attack_instance(
 
     if (timestamp != NULL)
     {
+        // TODO: include timestamp->tv_usec in the XML
+
         struct tm timestamp_tm;
         gmtime_r(&timestamp->tv_sec, &timestamp_tm);
 
