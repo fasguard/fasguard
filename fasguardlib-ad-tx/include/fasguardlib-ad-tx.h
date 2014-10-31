@@ -50,18 +50,17 @@ typedef union _fasguard_option_value
         @note The memory pointed to is the responsibility of the caller, not of
               the library. If you allocated it, you free it.
     */
-    void * pointer_val;
+    void const * pointer_val;
 } fasguard_option_value_t;
 
 /**
     @brief Store a single option.
 
     Various functions below take a parameter of type
-    <tt>#fasguard_option_t const *</tt>, which is a pointer to an array of key-value
-    options. The definition of each option will specify which functions can take
-    that option. The array of options must end with the special value
-    #fasguard_end_of_options. If the pointer is NULL, it is treated the same as an
-    array containing only #fasguard_end_of_options.
+    <tt>#fasguard_option_t const *</tt>, which is a pointer to an array of
+    key-value options. The array of options must end with the special
+    value #fasguard_end_of_options. If the pointer is NULL, it is treated
+    the same as an array containing only #fasguard_end_of_options.
 */
 typedef struct _fasguard_option
 {
@@ -115,6 +114,21 @@ extern fasguard_option_t const fasguard_end_of_options;
 #define FASGUARD_IS_END_OF_OPTIONS(option) \
     ((option).flags & FASGUARD_OPTFLAG_END_OF_OPTIONS)
 
+/**
+    @brief Timestamp to microsecond precision.
+
+    #fasguard_option_value_t::pointer_val will contain a non-NULL pointer
+    to a struct timeval.
+*/
+#define FASGUARD_OPTION_TIMESTAMP UINT16_C(0x0001)
+
+/**
+    @brief Probability that something is malicious.
+
+    #fasguard_option_value_t::double_val will contain a probablity in the
+    range [0.0, 1.0].
+*/
+#define FASGUARD_OPTION_PROBABILITY_MALICIOUS UINT16_C(0x0002)
 
 /**
     @brief Opaque handle for a single output stream.
@@ -242,6 +256,11 @@ bool fasguard_end_attack_instance(
 
 /**
     @brief Add a packet to an attack instance.
+
+    Supported options:
+      - #FASGUARD_OPTION_TIMESTAMP: Arrival time of the packet.
+      - #FASGUARD_OPTION_PROBABILITY_MALICIOUS: Likelihood that the packet
+        is part of an attack.
 
     @param[in] instance Attack instance to append this packet to.
     @param[in] packet_length Length of @p packet.

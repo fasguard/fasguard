@@ -10,6 +10,9 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
 
@@ -736,6 +739,8 @@ bool fasguard_add_packet_to_attack_instance(
 {
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
+    struct timeval const * timestamp = NULL;
+    double probability_attack = -1.0;
     ssize_t written;
 
     for (size_t i = 0;
@@ -744,6 +749,14 @@ bool fasguard_add_packet_to_attack_instance(
     {
         switch (options[i].key)
         {
+            case FASGUARD_OPTION_TIMESTAMP:
+                timestamp = options[i].value.pointer_val;
+                break;
+
+            case FASGUARD_OPTION_PROBABILITY_MALICIOUS:
+                probability_attack = options[i].value.double_val;
+                break;
+
             default:
                 errno = EINVAL;
                 return NULL;
@@ -763,9 +776,84 @@ bool fasguard_add_packet_to_attack_instance(
         return false;
     }
 
-    // TODO: support probability of attack (fasguard_stix_packet_prob_attack_fmt)
+    if (probability_attack >= 0.0 && probability_attack <= 1.0)
+    {
+        char * probability_attack_str = sprintf_alloc(
+            (char const *)fasguard_stix_packet_prob_attack_fmt,
+            probability_attack);
+        if (probability_attack_str == NULL)
+        {
+            // errno set by sprintf_alloc()
+            return false;
+        }
 
-    // TODO: support timestamp of packet (fasguard_stix_packet_timestamp_timefmt)
+        size_t const probability_attack_strlen =
+            strlen(probability_attack_str);
+
+        written = write(instance->instancefd, probability_attack_str,
+            probability_attack_strlen);
+        int errno_save = errno;
+
+        free(probability_attack_str);
+
+        if (written < 0)
+        {
+            errno = errno_save;
+            return false;
+        }
+        else if ((size_t)written != probability_attack_strlen)
+        {
+            errno = EIO;
+            return false;
+        }
+    }
+
+    if (timestamp != NULL)
+    {
+        struct tm timestamp_tm;
+        gmtime_r(&timestamp->tv_sec, &timestamp_tm);
+
+        // There doesn't seem like a good way to get the correct
+        // length ahead of time, but this should work as a rough
+        // over-estimate.
+        size_t const timestamp_len =
+            fasguard_stix_packet_timestamp_timefmt_strlen + 128;
+        char * timestamp_str = malloc(timestamp_len);
+        if (timestamp_str == NULL)
+        {
+            errno = ENOMEM;
+            return false;
+        }
+
+        size_t const timestamp_strlen = strftime(
+            timestamp_str, timestamp_len,
+            (char const *)fasguard_stix_packet_timestamp_timefmt,
+            &timestamp_tm);
+        if (timestamp_strlen == 0)
+        {
+            // timestamp_len was too small
+            free(timestamp_str);
+            errno = EINVAL;
+            return false;
+        }
+
+        written = write(instance->instancefd, timestamp_str,
+            timestamp_strlen);
+        int errno_save = errno;
+
+        free(timestamp_str);
+
+        if (written < 0)
+        {
+            errno = errno_save;
+            return false;
+        }
+        else if ((size_t)written != timestamp_strlen)
+        {
+            errno = EIO;
+            return false;
+        }
+    }
 
     written = write(instance->instancefd, fasguard_stix_packet_data_header,
         fasguard_stix_packet_data_header_strlen);
