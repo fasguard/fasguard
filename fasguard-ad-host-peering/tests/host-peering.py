@@ -23,6 +23,10 @@ def a(src, dst):
 # Test the cleanup function by waiting MAX_EMPTY_GENERATIONS with no
 # traffic.
 a("192.168.1.1", "192.168.1.2")
+time += 60
+a("192.168.1.1", "192.168.1.3")
+time += 60
+a("192.168.1.1", "192.168.1.4")
 time += 24 * 60 * 60 + 60
 
 # Create a very low mean and standard deviation for 192.168.1.1 by
