@@ -69,12 +69,12 @@ struct attack_group_data_t
     /**
         @brief Handle for the group.
     */
-    fasguard_attack_group_t group;
+    fasguard_attack_group_type group;
 
     /**
         @brief Map from IP to attack instance.
     */
-    std::unordered_map<IPAddress, fasguard_attack_instance_t> instances;
+    std::unordered_map<IPAddress, fasguard_attack_instance_type> instances;
 };
 
 /**
@@ -116,7 +116,7 @@ struct packet_callback_data_t
     /**
         @brief Handle for attack output stream.
     */
-    fasguard_attack_output_t attack_output;
+    fasguard_attack_output_type attack_output;
 
     /**
         @brief Map from IP to attack group.
@@ -204,7 +204,7 @@ static void handle_attacks(
         }
     }
 
-    fasguard_attack_instance_t instance = NULL;
+    fasguard_attack_instance_type instance = NULL;
     auto instance_it = group->instances.find(ip2);
     if (instance_it != group->instances.end())
     {
@@ -228,7 +228,7 @@ static void handle_attacks(
         group->instances[ip2] = instance;
     }
 
-    fasguard_option_t const packet_options[] = {
+    fasguard_option_type const packet_options[] = {
         // Set the timestamp from the pcap header.
         {
             .flags = 0,
