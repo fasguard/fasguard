@@ -31,7 +31,7 @@
 
 
 /**
-    @brief Type pointed to by #fasguard_attack_output_t.
+    @brief Type pointed to by #fasguard_attack_output_type.
 */
 struct fasguard_attack_output
 {
@@ -52,7 +52,7 @@ struct fasguard_attack_output
 };
 
 /**
-    @brief Type pointed to by #fasguard_attack_group_t.
+    @brief Type pointed to by #fasguard_attack_group_type.
 */
 struct fasguard_attack_group
 {
@@ -93,7 +93,7 @@ struct fasguard_attack_group
 };
 
 /**
-    @brief Type pointed to by #fasguard_attack_instance_t.
+    @brief Type pointed to by #fasguard_attack_instance_type.
 */
 struct fasguard_attack_instance
 {
@@ -284,9 +284,9 @@ static bool write_b64(
     return true;
 }
 
-fasguard_attack_output_t fasguard_open_attack_output(
+fasguard_attack_output_type fasguard_open_attack_output(
     char const * directory,
-    fasguard_option_t const * options)
+    fasguard_option_type const * options)
 {
     struct fasguard_attack_output * output = NULL;
 
@@ -370,14 +370,14 @@ error:
 }
 
 bool fasguard_flush_attack_output(
-    fasguard_attack_output_t _output)
+    fasguard_attack_output_type _output)
 {
     (void)_output;
     return true;
 }
 
 bool fasguard_close_attack_output(
-    fasguard_attack_output_t _output)
+    fasguard_attack_output_type _output)
 {
     struct fasguard_attack_output * output = (struct fasguard_attack_output *)_output;
     int last_errno = 0;
@@ -402,9 +402,9 @@ bool fasguard_close_attack_output(
     return errno == 0;
 }
 
-fasguard_attack_group_t fasguard_start_attack_group(
-    fasguard_attack_output_t _output,
-    fasguard_option_t const * options)
+fasguard_attack_group_type fasguard_start_attack_group(
+    fasguard_attack_output_type _output,
+    fasguard_option_type const * options)
 {
     struct fasguard_attack_output * output = (struct fasguard_attack_output *)_output;
     struct fasguard_attack_group * group = NULL;
@@ -524,7 +524,7 @@ error:
 }
 
 bool fasguard_end_attack_group(
-    fasguard_attack_group_t _group)
+    fasguard_attack_group_type _group)
 {
     struct fasguard_attack_group * group = (struct fasguard_attack_group *)_group;
     int last_errno = 0;
@@ -576,9 +576,9 @@ bool fasguard_end_attack_group(
     return errno == 0;
 }
 
-fasguard_attack_instance_t fasguard_start_attack_instance(
-    fasguard_attack_group_t _group,
-    fasguard_option_t const * options)
+fasguard_attack_instance_type fasguard_start_attack_instance(
+    fasguard_attack_group_type _group,
+    fasguard_option_type const * options)
 {
     struct fasguard_attack_group * group = (struct fasguard_attack_group *)_group;
     struct fasguard_attack_instance * instance = NULL;
@@ -642,7 +642,7 @@ error:
 }
 
 bool fasguard_end_attack_instance(
-    fasguard_attack_instance_t _instance)
+    fasguard_attack_instance_type _instance)
 {
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
@@ -732,10 +732,10 @@ done_writing:
 }
 
 bool fasguard_add_packet_to_attack_instance(
-    fasguard_attack_instance_t _instance,
+    fasguard_attack_instance_type _instance,
     size_t packet_length,
     uint8_t const * packet,
-    fasguard_option_t const * options)
+    fasguard_option_type const * options)
 {
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;

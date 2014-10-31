@@ -51,13 +51,13 @@ typedef union _fasguard_option_value
               the library. If you allocated it, you free it.
     */
     void const * pointer_val;
-} fasguard_option_value_t;
+} fasguard_option_value_type;
 
 /**
     @brief Store a single option.
 
     Various functions below take a parameter of type
-    <tt>#fasguard_option_t const *</tt>, which is a pointer to an array of
+    <tt>#fasguard_option_type const *</tt>, which is a pointer to an array of
     key-value options. The array of options must end with the special
     value #fasguard_end_of_options. If the pointer is NULL, it is treated
     the same as an array containing only #fasguard_end_of_options.
@@ -92,23 +92,23 @@ typedef struct _fasguard_option
 
         The interpretation of this value depends on the #key.
     */
-    fasguard_option_value_t value;
-} fasguard_option_t;
+    fasguard_option_value_type value;
+} fasguard_option_type;
 
 /**
     @internal
-    @brief Special flag to indicate the end of an array of fasguard_option_t.
+    @brief Special flag to indicate the end of an array of fasguard_option_type.
 */
 #define FASGUARD_OPTFLAG_END_OF_OPTIONS UINT32_C(0x80000000)
 
 /**
-    @brief Special value to indicate the end of an array of #fasguard_option_t.
+    @brief Special value to indicate the end of an array of #fasguard_option_type.
 */
-extern fasguard_option_t const fasguard_end_of_options;
+extern fasguard_option_type const fasguard_end_of_options;
 
 /**
     @internal
-    @brief Determine if an option (of type #fasguard_option_t) is
+    @brief Determine if an option (of type #fasguard_option_type) is
            #fasguard_end_of_options.
 */
 #define FASGUARD_IS_END_OF_OPTIONS(option) \
@@ -117,7 +117,7 @@ extern fasguard_option_t const fasguard_end_of_options;
 /**
     @brief Timestamp to microsecond precision.
 
-    #fasguard_option_value_t::pointer_val will contain a non-NULL pointer
+    #fasguard_option_value_type::pointer_val will contain a non-NULL pointer
     to a struct timeval.
 */
 #define FASGUARD_OPTION_TIMESTAMP UINT16_C(0x0001)
@@ -125,7 +125,7 @@ extern fasguard_option_t const fasguard_end_of_options;
 /**
     @brief Probability that something is malicious.
 
-    #fasguard_option_value_t::double_val will contain a probablity in the
+    #fasguard_option_value_type::double_val will contain a probablity in the
     range [0.0, 1.0].
 */
 #define FASGUARD_OPTION_PROBABILITY_MALICIOUS UINT16_C(0x0002)
@@ -133,17 +133,17 @@ extern fasguard_option_t const fasguard_end_of_options;
 /**
     @brief Opaque handle for a single output stream.
 */
-typedef void * fasguard_attack_output_t;
+typedef void * fasguard_attack_output_type;
 
 /**
     @brief Opaque handle for an attack group.
 */
-typedef void * fasguard_attack_group_t;
+typedef void * fasguard_attack_group_type;
 
 /**
     @brief Opaque handle for an instance of an attack.
 */
-typedef void * fasguard_attack_instance_t;
+typedef void * fasguard_attack_instance_type;
 
 /**
     @brief Open a directory for writing STIX files, one file per attack group.
@@ -178,9 +178,9 @@ typedef void * fasguard_attack_instance_t;
     @return A valid output handle, or NULL if an error occured. If NULL is
             returned, errno will be set to indicate the error.
 */
-fasguard_attack_output_t fasguard_open_attack_output(
+fasguard_attack_output_type fasguard_open_attack_output(
     char const * directory,
-    fasguard_option_t const * options);
+    fasguard_option_type const * options);
 
 /**
     @brief Flush an output stream.
@@ -189,7 +189,7 @@ fasguard_attack_output_t fasguard_open_attack_output(
             be set to indicate the error.
 */
 bool fasguard_flush_attack_output(
-    fasguard_attack_output_t output);
+    fasguard_attack_output_type output);
 
 /**
     @brief Flush and close an output stream.
@@ -204,7 +204,7 @@ bool fasguard_flush_attack_output(
             be set to indicate the error.
 */
 bool fasguard_close_attack_output(
-    fasguard_attack_output_t output);
+    fasguard_attack_output_type output);
 
 /**
     @brief Start a new group of related attacks.
@@ -212,9 +212,9 @@ bool fasguard_close_attack_output(
     @return The new attack group's ID, or NULL on error. If NULL is returned,
             errno will be set to indicate the error.
 */
-fasguard_attack_group_t fasguard_start_attack_group(
-    fasguard_attack_output_t output,
-    fasguard_option_t const * options);
+fasguard_attack_group_type fasguard_start_attack_group(
+    fasguard_attack_output_type output,
+    fasguard_option_type const * options);
 
 /**
     @brief Mark the end of a group of related attacks.
@@ -230,7 +230,7 @@ fasguard_attack_group_t fasguard_start_attack_group(
             set to indicate the error.
 */
 bool fasguard_end_attack_group(
-    fasguard_attack_group_t group);
+    fasguard_attack_group_type group);
 
 /**
     @brief Start a new instance of an attack within the specified attack group.
@@ -238,9 +238,9 @@ bool fasguard_end_attack_group(
     @return The new attack instance's ID, or NULL on error. If NULL is returned,
             errno will be set to indicate the error.
 */
-fasguard_attack_instance_t fasguard_start_attack_instance(
-    fasguard_attack_group_t group,
-    fasguard_option_t const * options);
+fasguard_attack_instance_type fasguard_start_attack_instance(
+    fasguard_attack_group_type group,
+    fasguard_option_type const * options);
 
 /**
     @brief Mark the end of a single attack.
@@ -252,7 +252,7 @@ fasguard_attack_instance_t fasguard_start_attack_instance(
             set to indicate the error.
 */
 bool fasguard_end_attack_instance(
-    fasguard_attack_instance_t instance);
+    fasguard_attack_instance_type instance);
 
 /**
     @brief Add a packet to an attack instance.
@@ -270,10 +270,10 @@ bool fasguard_end_attack_instance(
             set to indicate the error.
 */
 bool fasguard_add_packet_to_attack_instance(
-    fasguard_attack_instance_t instance,
+    fasguard_attack_instance_type instance,
     size_t packet_length,
     uint8_t const * packet,
-    fasguard_option_t const * options);
+    fasguard_option_type const * options);
 
 
 #ifdef __cplusplus
