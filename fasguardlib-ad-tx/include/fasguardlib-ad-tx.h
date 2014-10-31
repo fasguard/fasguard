@@ -6,13 +6,17 @@
 #ifndef FASGUARDLIB_AD_TX_H
 #define FASGUARDLIB_AD_TX_H
 
+#if defined(__cplusplus) && !defined(_Bool)
+#define _Bool bool
+#define LIBFASGUARD_ADDED_BOOL
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 #include <inttypes.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 
@@ -27,7 +31,7 @@ typedef union
     /**
         @brief Boolean value.
     */
-    bool bool_val;
+    _Bool bool_val;
 
     /**
        @brief Unsigned integer value.
@@ -188,7 +192,7 @@ fasguard_attack_output_type fasguard_open_attack_output(
     @return True on success, false on error. If false is returned, errno will
             be set to indicate the error.
 */
-bool fasguard_flush_attack_output(
+_Bool fasguard_flush_attack_output(
     fasguard_attack_output_type output);
 
 /**
@@ -203,7 +207,7 @@ bool fasguard_flush_attack_output(
     @return True on success, false on error. If false is returned, errno will
             be set to indicate the error.
 */
-bool fasguard_close_attack_output(
+_Bool fasguard_close_attack_output(
     fasguard_attack_output_type output);
 
 /**
@@ -229,7 +233,7 @@ fasguard_attack_group_type fasguard_start_attack_group(
     @return True on success, false on error. If false is returned, errno will be
             set to indicate the error.
 */
-bool fasguard_end_attack_group(
+_Bool fasguard_end_attack_group(
     fasguard_attack_group_type group);
 
 /**
@@ -251,7 +255,7 @@ fasguard_attack_instance_type fasguard_start_attack_instance(
     @return True on success, false on error. If false is returned, errno will be
             set to indicate the error.
 */
-bool fasguard_end_attack_instance(
+_Bool fasguard_end_attack_instance(
     fasguard_attack_instance_type instance);
 
 /**
@@ -269,7 +273,7 @@ bool fasguard_end_attack_instance(
     @return True on success, false on error. If false is returned, errno will be
             set to indicate the error.
 */
-bool fasguard_add_packet_to_attack_instance(
+_Bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_type instance,
     size_t packet_length,
     uint8_t const * packet,
@@ -278,6 +282,11 @@ bool fasguard_add_packet_to_attack_instance(
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef LIBFASGUARD_ADDED_BOOL
+#undef _Bool
+#undef LIBFASGUARD_ADDED_BOOL
 #endif
 
 #endif
