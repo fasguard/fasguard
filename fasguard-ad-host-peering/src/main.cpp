@@ -228,11 +228,34 @@ static void handle_attacks(
         group->instances[ip2] = instance;
     }
 
+    fasguard_option_t const packet_options[] = {
+        // Set the timestamp from the pcap header.
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_TIMESTAMP,
+            .value = { .pointer_val = &pcap_header->ts },
+        },
+
+        // Hard-code the probability that the packet is malicious.
+        // A real implementation would set this to a value between
+        // 0.0 and 1.0 based on how evil the packet appears to be.
+        // We include this option solely to demonstrate its use.
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_PROBABILITY_MALICIOUS,
+            .value = { .double_val = 0.42 },
+        },
+
+        fasguard_end_of_options,
+    };
+
     if (!fasguard_add_packet_to_attack_instance(
         instance,
         pcap_header->caplen - layer2_hlen,
         packet + layer2_hlen,
-        NULL))
+        packet_options))
     {
         LOG_PERROR_R(LOG_WARNING,
             "Could not add packet to attack instance %s -> %s",
