@@ -22,7 +22,7 @@ extern "C"
     This is meant to store the value for any single option. Each option will
     specify how this value is used.
 */
-typedef union _fasguard_option_value
+typedef union
 {
     /**
         @brief Boolean value.
@@ -62,7 +62,7 @@ typedef union _fasguard_option_value
     value #fasguard_end_of_options. If the pointer is NULL, it is treated
     the same as an array containing only #fasguard_end_of_options.
 */
-typedef struct _fasguard_option
+typedef struct
 {
     /**
         @brief Set of flags for the option.
