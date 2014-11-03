@@ -84,7 +84,44 @@ TODO: add prose
 
 ** Automatic Signature Generator
 
-TODO
+TODO: add prose
+
+#+BEGIN_SRC ditaa :file README_arch_asg.png :cmdline -E
+   "bad" packet data (STIX/CybOX)
+                 |
+   /-------------|--------------\
+   |             |              |
+   |             v              |
+   |    libfasguard_collector   |
+   |             |              |
+   +-------------|--------------+
+   | ASG         |              |
+   |             v              |
+   |  /----------------------\  |
+   |  | signature generation |  |
+   |  \----------------------/  |
+   |             |              |
+   |             v              |
+   |     /----------------\     |  /--------------\
+   |     | false positive |<----+--| bloom filter |<---- live or recorded
+   |     |    reduction   |     |  |  generation  |      "good" packets
+   |     \----------------/     |  \--------------/
+   |             |              |
+   |             v              |
+   |  /---------------------\   |
+   |  | IDS rule generation |   |
+   |  \---------------------/   |
+   |             |              |
+   +-------------|--------------+
+   |             |              |
+   |             v              |
+   |       libids_rule_tx       |
+   |             |              |
+   \-------------|--------------/
+                 |
+                 v
+         TAXII to Suricata
+#+END_SRC
 
 ** Component Details
 
