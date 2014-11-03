@@ -33,7 +33,54 @@ For an overview of how these components fit together, see Section
 * System Architecture
 <<sec:arch>>
 
-TODO
+TODO: add prose
+
+#+BEGIN_SRC ditaa :file README_arch.png :cmdline -E
+               live traffic stream or recorded archive
+                                  |
+          +-----------------------+-----------------------+
+          |                       |                       |
+          v                       v                       v
+/--------------------\  /--------------------\  /--------------------\
+|    host peering    |  |       other        |  |       other        |
+|       sensor       |  |       sensor       |  |       sensor       |
++--------------------+  +--------------------+  +--------------------+
+| libfasguard_sensor |  | libfasguard_sensor |  | libfasguard_sensor |
+\--------------------/  \--------------------/  \--------------------/
+          |                       |                       |
+          +-----------------------+-----------------------+
+                                  | "bad" packet data (STIX/CybOX)
+                                  v
+             /-------------------------------\
+             |     libfasguard_collector     |
+             +-------------------------------+
+             |          FASGuard ASG         |
+             | automatic signature generator |<---- "good" packet data
+             |        (detailed below)       |
+             +-------------------------------+
+             |          IDS rule tx          |
+             \-------------------------------/
+                             |
+               +-------------+-------------+
+               |    IDS rules (TAXII)      |
+               v                           v
+        /-------------\           /------------------\
+        | IDS rule rx |           |    IDS rule rx   |
+        +-------------+           +------------------+
+        |  Suricata   |           | rule distributor |
+        \-------------/           +------------------+
+                                  |  libids_rule_tx  |
+                                  \------------------/
+                                           | IDS rules (TAXII)
+                     +-------------------+-+-----------------+
+                     |                   |                   |
+                     v                   v                   v
+             /----------------\  /----------------\  /----------------\
+             | libids_rule_rx |  | libids_rule_rx |  | libids_rule_rx |
+             +----------------+  +----------------+  +----------------+
+             |    Suricata    |  |    Suricata    |  |    Suricata    |
+             \----------------/  \----------------/  \----------------/
+#+END_SRC
 
 ** Automatic Signature Generator
 
