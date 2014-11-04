@@ -1,0 +1,26 @@
+AC_PREREQ(2.59)
+AC_INIT(fasguardlib-bloom, 0.1, dwyschog@bbn.com)
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR([m4])
+AM_INIT_AUTOMAKE([1.11 foreign])
+AM_SILENT_RULES
+AC_CONFIG_SRCDIR([src/fasguardbloom.hpp])
+LT_INIT
+
+AM_MAINTAINER_MODE
+: ${CFLAGS=""}
+AC_PROG_CXX
+AC_PROG_CXX_C_O
+AC_PROG_MAKE_SET
+AC_PROG_LN_S
+
+
+AC_TYPE_SIZE_T
+
+
+AC_CONFIG_FILES([
+    Makefile
+])
+
+
+AC_OUTPUT
