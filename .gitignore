@@ -19,6 +19,7 @@ desktop.ini
 ~*.doc
 *.obj
 *.exe
+.*.swp
 
 # Python ignores
 *.pyc
