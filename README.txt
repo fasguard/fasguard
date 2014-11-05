@@ -1,31 +1,89 @@
 * Directory Organization
 
-  * ~fasguard-ad-host-peering~:  Host peering anomaly detector
-    (reference sensor).
-  * ~libfasguard_sensor~:  Library used by detector designers to
-    format captured packets (or log entries or HTTP headers or...) as
-    STIX/CybOX XML records and send them to the signature generation
-    system.
-  * ~libfasguard_collector~:  Library used to receive the XML and turn
-    it into callbacks.
-  * ~fasguard-asg~:  Program that takes STIX/CybOX XML and benign
-    packet data and outputs IDS rules for Suricata.
-    * ~fasguard-asg/bloom~:  Tools to take benign traffic and turn it
-      into n-gram Bloom filters
-    * ~fasguard-asg/sig-gen~:  Takes input from ~libfasguard_collector~
-      and outputs strings for use in IDS rules.
-    * ~fasguard-asg/sig-filter~:  Filters the output from ~sig-gen~
-      using benign traffic Bloom filters.
-    * ~fasguard-asg/rule-gen~:  Generates IDS rules from the output of
+  * ~fasguard-benign-traffic-collection~
+
+    Tools to collect live network traffic and save it in a form
+    suitable for consumption by ~fasguard-benign-traffic-compression~.
+
+  * ~fasguard-benign-traffic-compression~
+
+    Tools to take the raw benign traffic collected by the tools in
+    ~fasguard-benign-traffic-collection~ and turn it into n-gram Bloom
+    filters.
+
+  * ~fasguard-ad-host-peering~
+
+    Host peering anomaly detector (reference sensor).
+
+  * ~fasguard-ad-*~
+
+    Prefix reserved for other anomaly detectors.
+
+  * ~fasguardlib-ad-common~
+
+    Schema definition for the XML representation of the "bad" traffic
+    coming from the anomaly detectors.
+
+  * ~fasguardlib-ad-tx~
+
+    Library used by detector designers to format captured packets (or
+    log entries or HTTP headers or...) as STIX/CybOX XML records and
+    send them to the signature generation system.
+
+  * ~fasguardlib-ad-rx~
+
+    Library that receives and parses the XML coming from the anomaly
+    detectors.
+
+  * ~fasguard-asg~
+
+    Program that takes "bad" and benign packet data and outputs IDS
+    rules for Suricata.  It is divided into these sub-components:
+
+    * ~fasguard-asg/sig-gen~
+
+      Takes input from ~fasguardlib-ad-rx~ and outputs strings for use
+      in IDS rules.
+
+    * ~fasguard-asg/sig-filter~
+
+      Filters benign strings from the output of ~sig-gen~ using the
+      benign traffic Bloom filters that are created by
+      ~fasguard-benign-traffic-compression~.
+
+    * ~fasguard-asg/rule-gen~
+
+      Generates IDS rules suitable for Suricata from the output of
       ~sig-filter~.
-  * ~libfasguard_rule_tx~:  Library that uses TAXII to send IDS rules
-    to Suricata
-  * ~libfasguard_rule_rx~:  Library that receives the IDS rules over
-    TAXII and provides them to Suricata (or some other program).
-  * ~suricata~:  Friendly fork of Suricata that we can modify to
-    integrate with ~libfasguard_rule_rx~
-  * ~data~:  Collection of sample attack packets, benign traffic,
-    populated Bloom filters, etc.
+
+  * ~fasguardlib-rule-common~
+
+    Schema definition for XML-wrapped Suricata IDS rules.
+
+  * ~fasguardlib-rule-tx~
+
+    Library that generates XML-wrapped Suricata IDS rules and sends
+    them to Suricata via TAXII.
+
+  * ~fasguardlib-rule-rx~
+
+    Library that receives and parses the IDS rules coming from
+    ~fasguardlib-rule-tx~ and provides them to Suricata (or some other
+    program).
+
+  * ~suricata~
+
+    Friendly fork of Suricata that we can modify to integrate with
+    ~fasguardlib-rule-rx~.
+
+  * ~fasguard-samples~
+
+    Collection of sample attack packets, benign traffic, populated
+    Bloom filters, etc.
+
+  * ~fasguardlib-bloom~
+
+    Shared library for creating and using Bloom filters.
 
 For an overview of how these components fit together, see Section
 [[sec:arch]].
@@ -38,48 +96,48 @@ TODO: add prose
 #+BEGIN_SRC ditaa :file README_arch.png :cmdline -E
                live traffic stream or recorded archive
                                   |
-          +-----------------------+-----------------------+
-          |                       |                       |
-          v                       v                       v
-/--------------------\  /--------------------\  /--------------------\
-|    host peering    |  |       other        |  |       other        |
-|       sensor       |  |       sensor       |  |       sensor       |
-+--------------------+  +--------------------+  +--------------------+
-| libfasguard_sensor |  | libfasguard_sensor |  | libfasguard_sensor |
-\--------------------/  \--------------------/  \--------------------/
-          |                       |                       |
-          +-----------------------+-----------------------+
-                                  | "bad" packet data (STIX/CybOX)
-                                  v
+             +--------------------+-----+----------------------+
+             |                          |                      |
+             v                          v                      v
+/--------------------------\  /-------------------\  /-------------------\
+| fasguard‐ad‐host‐peering |  |       other       |  |       other       |
+|          sensor          |  |      sensor       |  |      sensor       |
++--------------------------+  +-------------------+  +-------------------+
+|     fasguardlib‐ad‐tx    |  | fasguardlib‐ad‐tx |  | fasguardlib‐ad‐tx |
+\------------+-------------/  \---------+---------/  \---------+---------/
+             |                          |                      |
+             +---------------+----------+----------------------+
+                             | "bad" packet data (STIX/CybOX)
+                             v
              /-------------------------------\
-             |     libfasguard_collector     |
+             |       fasguardlib‐ad‐rx       |
              +-------------------------------+
-             |          FASGuard ASG         |
+             |          fasguard‐asg         |
              | automatic signature generator |<---- "good" packet data
-             |        (detailed below)       |
+             |        (detailed below)       |      (detailed below)
              +-------------------------------+
-             |          IDS rule tx          |
-             \-------------------------------/
+             |      fasguardlib‐rule‐tx      |
+             \---------------+---------------/
                              |
                +-------------+-------------+
                |    IDS rules (TAXII)      |
                v                           v
-        /-------------\           /------------------\
-        | IDS rule rx |           |    IDS rule rx   |
-        +-------------+           +------------------+
-        |  Suricata   |           | rule distributor |
-        \-------------/           +------------------+
-                                  |  libids_rule_tx  |
-                                  \------------------/
+    /---------------------\     /---------------------\
+    | fasguardlib‐rule‐rx |     | fasguardlib‐rule‐rx |
+    +---------------------+     +---------------------+
+    |      Suricata       |     |   rule distributor  |
+    \---------------------/     +---------------------+
+                                | fasguardlib‐rule‐tx |
+                                \----------+----------/
                                            | IDS rules (TAXII)
-                     +-------------------+-+-----------------+
-                     |                   |                   |
-                     v                   v                   v
-             /----------------\  /----------------\  /----------------\
-             | libids_rule_rx |  | libids_rule_rx |  | libids_rule_rx |
-             +----------------+  +----------------+  +----------------+
-             |    Suricata    |  |    Suricata    |  |    Suricata    |
-             \----------------/  \----------------/  \----------------/
+             +------------------------+----+-------------------+
+             |                        |                        |
+             v                        v                        v
+  /---------------------\  /---------------------\  /---------------------\
+  | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |
+  +---------------------+  +---------------------+  +---------------------+
+  |      Suricata       |  |      Suricata       |  |      Suricata       |
+  \---------------------/  \---------------------/  \---------------------/
 #+END_SRC
 
 ** Automatic Signature Generator
@@ -92,30 +150,33 @@ TODO: add prose
    /-------------|--------------\
    |             |              |
    |             v              |
-   |    libfasguard_collector   |
+   |      fasguardlib‐ad‐rx     |
    |             |              |
    +-------------|--------------+
-   | ASG         |              |
+   |fasguard‐asg |              |
    |             v              |
    |  /----------------------\  |
    |  | signature generation |  |
-   |  \----------------------/  |
-   |             |              |
-   |             v              |
-   |     /----------------\     |  /--------------\
-   |     | false positive |<----+--| bloom filter |<---- live or recorded
-   |     |    reduction   |     |  |  generation  |      "good" packets
-   |     \----------------/     |  \--------------/
+   |  |      (sig‐gen)       |  |                           live or recorded
+   |  \----------+-----------/  |                            "good" packets
+   |             |              |                                  |
+   |             v              |                                  v
+   |     /----------------\     |  /------------------\   /------------------\
+   |     | false positive |     |  | fasguard‐benign‐ |   | fasguard‐benign‐ |
+   |     |    reduction   |<----+--+     traffic‐     |<--+     traffic‐     |
+   |     |  (sig‐filter)  |     |  |   compression    |   |    collection    |
+   |     \-------+--------/     |  \------------------/   \------------------/
    |             |              |
    |             v              |
    |  /---------------------\   |
    |  | IDS rule generation |   |
-   |  \---------------------/   |
+   |  |      (rule‐gen)     |   |
+   |  \----------+----------/   |
    |             |              |
    +-------------|--------------+
    |             |              |
    |             v              |
-   |       libids_rule_tx       |
+   |     fasguardlib‐rule‐tx    |
    |             |              |
    \-------------|--------------/
                  |
