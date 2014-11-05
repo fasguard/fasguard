@@ -153,6 +153,11 @@ public:
     */
     virtual ~bloom_filter();
 
+    /**
+        @brief Parameters for this bloom filter.
+    */
+    bloom_filter_parameters const parameters;
+
 private:
     bloom_filter();
 
