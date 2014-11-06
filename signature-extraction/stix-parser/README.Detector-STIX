@@ -1,0 +1,23 @@
+This README is intended to explain the initial layout of the Detector.xml file
+which is an example of an incident transmitted from a detector to the FASGuard
+automatic signature generator. The example validates against the various STIX/
+CybOX schemas.
+
+This XML is based on the STIX template available from the website and therefore
+contains the major STIX elements, not all of which are necessary. The various
+STIX and CybOX schemas are specified as options to the STIX_Package tag.
+
+The actual contents is delimited the stix:Incidents tag. This delimits possible
+multiple instances of a single attack type. Each instance of the attack is
+delimited be a stix:Incident tag. The sequence of packets associated with a
+single attack is delimited by the incident:Related_Observables tag and each
+packet is delimited by a stixCommon:Observable tag. Within the Observable, most
+of the information is contained within cybox tags.
+
+Information about the packet is embedded in a cybox:Keywords list, the only one
+in the example being ProbAttack. A key/value pair is envisioned for this type of
+metadata, so that ProbAttack=0.5 would indicate that the probability that the
+current packet is an attack is 50%. Other metadata can be included as needed.
+
+The actual packet payload is encoded in base64 between ArtifactObj:Raw_Artifact
+tags.
