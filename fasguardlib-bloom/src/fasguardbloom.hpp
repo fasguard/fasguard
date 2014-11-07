@@ -193,6 +193,42 @@ public:
     */
     bloom_filter_parameters const parameters;
 
+protected:
+    /**
+        @brief Set the specified bit.
+    */
+    inline void bit_set(
+        bloom_filter_parameters::index_type index)
+    {
+        // TODO: fix this if sizeof(uint8_t *) < 8
+        m_data[index / 8] |= 1 << (index % 8);
+    }
+
+    /**
+        @brief Test the specified bit.
+    */
+    inline bool bit_test(
+        bloom_filter_parameters::index_type index)
+        const
+    {
+        // TODO: fix this if sizeof(uint8_t *) < 8
+        return m_data[index / 8] & (1 << (index % 8));
+    }
+
+    /**
+        @brief Test, then set the specified bit.
+    */
+    inline bool bit_testset(
+        bloom_filter_parameters::index_type index)
+    {
+        // TODO: fix this if sizeof(uint8_t *) < 8
+        uint8_t & datum = m_data[index / 8];
+        uint_fast8_t const mask = 1 << (index % 8);
+        bool const ret = datum & mask;
+        datum |= mask;
+        return ret;
+    }
+
 private:
     bloom_filter();
 
@@ -201,6 +237,11 @@ private:
 
     bloom_filter & operator=(
         bloom_filter const & other);
+
+    /**
+        @brief Raw data of the bloom filter.
+    */
+    uint8_t * m_data;
 };
 
 }
