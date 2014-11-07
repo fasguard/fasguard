@@ -46,6 +46,17 @@ public:
     };
 
     /**
+        @brief Type to use for the length (in bits) of a bloom filter
+            or the index (in bits) into a bloom filter's data.
+    */
+    typedef uint_fast64_t index_type;
+
+    /**
+        @brief Type to use for the number of hashes in use.
+    */
+    typedef uint_fast64_t num_hashes_type;
+
+    /**
         @brief Default constructor.
 
         Only #version is initialized. All other fields must be
@@ -86,12 +97,12 @@ public:
     /**
         @brief Number of bits in the bloom filter.
     */
-    uint_fast64_t bitlength;
+    index_type bitlength;
 
     /**
         @brief Number of hashes used in the bloom filter.
     */
-    uint_fast64_t num_hashes;
+    num_hashes_type num_hashes;
 
     // 8 bytes of padding go here on disk
     // TODO: The current implementation uses predictable hashes. If we
