@@ -205,10 +205,15 @@ bloom_filter_parameters::bloom_filter_parameters(
     // integer.
     num_hashes = llround(M_LN2 * (double)bitlength / (double)items);
 
-    // A bloom filter won't work with zero hashes.
     if (num_hashes < 1)
     {
+        // A bloom filter won't work with zero hashes.
         num_hashes = 1;
+    }
+    else if (num_hashes > MAX_HASHES)
+    {
+        // Don't try to use more hashes than we can.
+        num_hashes = MAX_HASHES;
     }
 }
 
