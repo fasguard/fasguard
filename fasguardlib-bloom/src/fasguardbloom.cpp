@@ -150,6 +150,25 @@ static uint_least32_t const hash_seeds[MAX_HASHES] = {
 /**
     @brief Compute a hash.
 
+    @todo Add a parameter <tt>size_t bins</tt>, and ensure that the
+        return value is in the range [0, bins). Make sure to return
+        integers uniformly distributed in this range, i.e.,
+        <tt>result % bins</tt> is wrong. Also see the below note: the
+        type of <tt>bins</tt> should match the return type; if the
+        return type changes, <tt>bins</tt> should be that type, not
+        <tt>size_t</tt>.
+
+    @todo Figure out how to deal with the possible difference between
+        size_t (the return type of this function and the type used by
+        boost::hash_combine) and uint_fast64_t (the length and index
+        type used by bloom_filter). If we didn't support serializing
+        to disk, a simple solution would be to return an error if the
+        user tries to create a bloom filter with more than SIZE_MAX
+        bits (not bytes!). However, if we want a 32-bit system to be
+        able to read a bloom filter written on a 64-bit system, that
+        solution is problematic. Maybe consider writing our own
+        hash_combine function that operates on uint_fast64_t.
+
     @param[in] hash_number Which hash to compute. Must be less than
         #MAX_HASHES.
     @param[in] data Data to hash.
