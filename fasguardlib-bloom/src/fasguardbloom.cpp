@@ -1,4 +1,5 @@
 #include <boost/functional/hash.hpp>
+#include <cmath>
 
 #include <fasguardbloom.hpp>
 
@@ -169,6 +170,46 @@ static size_t compute_hash(
     }
 
     return result;
+}
+
+
+// Calculations are based on
+// http://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives
+// http://en.wikipedia.org/w/index.php?title=Bloom_filter&oldid=629694098
+// If you make changes to this function, remember to avoid floating-
+// point rounding issues.
+bloom_filter_parameters::bloom_filter_parameters(
+    size_t items,
+    double probability_false_positive)
+:
+    version(v0)
+{
+    // Calculate optimal number of bits and round to the nearest
+    // integer.
+    bitlength = llround(
+        (-1.0 * (double)items * log(probability_false_positive)) /
+        (M_LN2 * M_LN2));
+
+    if (bitlength % 8 != 0)
+    {
+        // Round bitlength up to the nearest byte.
+        bitlength += 8 - (bitlength % 8);
+    }
+    else if (bitlength < 1)
+    {
+        // A zero-size bloom filter is useless.
+        bitlength = 8;
+    }
+
+    // Calculate optimal number of hashes and round to the nearest
+    // integer.
+    num_hashes = llround(M_LN2 * (double)bitlength / (double)items);
+
+    // A bloom filter won't work with zero hashes.
+    if (num_hashes < 1)
+    {
+        num_hashes = 1;
+    }
 }
 
 }
