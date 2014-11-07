@@ -1,8 +1,17 @@
 #ifndef LIBFASGUARDBLOOM_FASGUARDBLOOM_H
 #define LIBFASGUARDBLOOM_FASGUARDBLOOM_H
 
-#include <cinttypes>
-#include <cstdlib>
+// TODO: Figure out how to include inttypes and stdlib.
+// On some systems, there are issues with cfoo headers requiring C++11
+// support. Consider using the cfoo variants and adding flags to
+// CXXFLAGS to enable C++11 support; or include the foo.h variants
+// instead to avoid the issue entirely. See this bug for an example
+// error message:
+// https://bugs.launchpad.net/libmemcached/+bug/1328985
+//#include <cinttypes>
+//#include <cstdlib>
+#include <inttypes.h>
+#include <stdlib.h>
 
 namespace fasguard
 {
