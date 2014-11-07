@@ -85,6 +85,10 @@ public:
     uint_fast64_t num_hashes;
 
     // 8 bytes of padding go here on disk
+    // TODO: The current implementation uses predictable hashes. If we
+    // care about attacks against the hash predictability, we could
+    // replace the 8 bytes of padding with a random 8-byte global
+    // seed. Then factor that seed into all the hash calculations.
 };
 
 /**
