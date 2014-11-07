@@ -57,6 +57,17 @@ public:
         double probability_false_positive);
 
     /**
+        @brief Estimate the false positive rate, given the number of
+            distinct items that have already been inserted.
+
+        This is the probability that testing a single, randomly chosen
+        item will return positive.
+    */
+    double probability_false_positive(
+        size_t items)
+        const;
+
+    /**
         @brief Version of the bloom filter.
     */
     Version version;

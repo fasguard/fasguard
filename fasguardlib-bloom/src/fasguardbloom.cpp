@@ -236,4 +236,20 @@ bloom_filter_parameters::bloom_filter_parameters(
     }
 }
 
+// TODO: Implement this or remove it from here and fasguardbloom.hpp.
+// The formulas on the wikipedia page[0] are both of the form (1-X)^Y.
+// If X is small and Y is large, the naive computation of that value
+// is very prone to rounding issues and will be very very wrong.
+// There's probably some trick to implement this correctly, but I
+// don't know it off the top of my head. If we don't need this
+// function, it's probably easiest to just remove it instead of
+// trying to implement it.
+//  [0] http://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives
+double bloom_filter_parameters::probability_false_positive(
+    size_t items)
+    const
+{
+    return NAN; // XXX: this is wrong, of course
+}
+
 }
