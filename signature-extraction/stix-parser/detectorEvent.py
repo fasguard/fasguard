@@ -22,6 +22,7 @@ from pprint import pprint
 from pprint import pformat
 import datetime
 import base64
+import math
 
 class AttackPacket:
     """
@@ -180,26 +181,81 @@ class DetectorEvent:
          'exploit_targets': [{}],
          'id': 'INSERT_PACKAGE_ID_HERE'}
         stixDict['incidents'] = []
+        stixDict['indicators'] = [{}]
+        stixDict['observables'] = {'major_version': 2,
+                                   'minor_version': 1,
+                                   'observables': [{}],
+                                   'update_version': 0}
+        stixDict['stix_header'] =  {'description': 'DESCRIPTION',
+                                    'handling':
+                                    [{'controlled_structure':
+                                      '//node()',
+                                      'marking_structures':
+                                      [{'color': 'WHITE',
+                                        'xsi:type':
+                                        'tlpMarking:TLPMarkingStructureType'}]},
+                                     {'controlled_structure':
+                                      '//node()',
+                                      'marking_structures':
+                                      [{'xsi:type':
+                                        'simpleMarking:SimpleMarkingStructureType'}]},
+                                     {'controlled_structure': '//node()',
+                                      'marking_structures':
+                                      [{'xsi:type':
+                                        'TOUMarking:TermsOfUseMarkingStructureType'}]}],
+                                    'information_source': {'identity': {},
+                                                           'time':
+                                                           {'produced_time':
+                                                            '2014-12-31T08:00:00+00:00'},
+                                                           'tools': [{}]},
+                                    'package_intents': [{'value': 'Incident',
+                                                         'xsi:type':
+                                                         'stixVocabs:PackageIntentVocab-1.0'}],
+                                    'title': 'TITLE'}
+        stixDict['threat_actors'] = [{}]
+        stixDict['ttps'] = {'kill_chains':
+                            {'kill_chains': [{'kill_chain_phases': [{}]}]},
+                            'ttps': [{}]}
+        stixDict['version'] = '1.1.1'
         for attack_instance in self.attackInstanceList:
             related_observables_hash = {'related_observables':
-                                        {'observables': []}}
+                                        {'observables': [],
+                                         'scope':'exclusive'}}
             observables_list = (related_observables_hash['related_observables']
                                 ['observables'])
             stixDict['incidents'].append(related_observables_hash)
             for packet in attack_instance.packetList:
+                f_sec,sec = math.modf(packet.timeStamp)
+                self.logger.debug('%f %f',sec,f_sec)
+                dtime = datetime.datetime.fromtimestamp(
+                    int(sec)).strftime('%Y-%m-%dT%H:%M:%S')+'.'+(
+                        str(int(f_sec*1000000)))
+                #dtime = '2014-10-13T14:08:00.002000+00:00'
+                self.logger.debug('dtime = '+dtime)
                 observable_dict = {}
                 data_dict = {}
                 properties_dict = {}
                 packet_dict = {}
                 observable_dict['observable'] = data_dict
-                data_dict['keywords'] = u'ProbAttack=' + str(packet.probAttack)
+                data_dict['keywords'] = [u'ProbAttack=' +
+                                         str(packet.probAttack)]
                 data_dict['object'] = properties_dict
                 properties_dict['properties'] = packet_dict
                 packet_dict['packaging'] = [{'algorithm': 'Base64',
                   'packaging_type': 'encoding'}]
                 packet_dict['raw_artifact'] = base64.b64encode(packet.payload)
+                packet_dict['type'] = 'Network Traffic'
+                packet_dict['xsi:type'] = 'ArtifactObjectType'
+                data_dict['observable_source'] = [
+                    {'time':{'received_time':dtime}
+                        }
+                    ]
                 observables_list.append(observable_dict)
 
         ofh = open('stix_dict.out', 'w')
         ofh.write(pformat(stixDict))
         self.logger.debug('Wrote stix dictionary to stix_dict.out')
+        stix_package = STIXPackage.from_dict(stixDict)
+        self.logger.debug('After constructor')
+        stix_xml = stix_package.to_xml()
+        return stix_xml

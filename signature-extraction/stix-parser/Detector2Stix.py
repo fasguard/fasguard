@@ -47,7 +47,11 @@ from detectorEvent import DetectorEvent
 def handle_file(filename):
     de = DetectorEvent(filename)
     xml = de.toStixXml()
-
+    logger = logging.getLogger('simple_example')
+    ofh = open('stix.xml','w')
+    ofh.write(xml)
+    ofh.close()
+    #logger.debug('XML: $s',xml)
 def setup():
     parser = argparse.ArgumentParser(
         description='Takes homegrown file for description of an event and '+
