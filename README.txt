@@ -94,50 +94,62 @@ For an overview of how these components fit together, see Section
 TODO: add prose
 
 #+BEGIN_SRC ditaa :file README_arch.png :cmdline -E
-               live traffic stream or recorded archive
-                                  |
-             +--------------------+-----+----------------------+
-             |                          |                      |
-             v                          v                      v
-/--------------------------\  /-------------------\  /-------------------\
-| fasguard‐ad‐host‐peering |  |       other       |  |       other       |
-|          sensor          |  |      sensor       |  |      sensor       |
-+--------------------------+  +-------------------+  +-------------------+
-|     fasguardlib‐ad‐tx    |  | fasguardlib‐ad‐tx |  | fasguardlib‐ad‐tx |
-\------------+-------------/  \---------+---------/  \---------+---------/
-             |                          |                      |
-             +---------------+----------+----------------------+
-                             | "bad" packet data (STIX/CybOX)
-                             v
-             /-------------------------------\
-             |       fasguardlib‐ad‐rx       |
-             +-------------------------------+
-             |          fasguard‐asg         |
-             | automatic signature generator |<---- "good" packet data
-             |        (detailed below)       |      (detailed below)
-             +-------------------------------+
-             |      fasguardlib‐rule‐tx      |
-             \---------------+---------------/
-                             |
-               +-------------+-------------+
-               |    IDS rules (TAXII)      |
-               v                           v
-    /---------------------\     /---------------------\
-    | fasguardlib‐rule‐rx |     | fasguardlib‐rule‐rx |
-    +---------------------+     +---------------------+
-    |      Suricata       |     |   rule distributor  |
-    \---------------------/     +---------------------+
-                                | fasguardlib‐rule‐tx |
-                                \----------+----------/
-                                           | IDS rules (TAXII)
-             +------------------------+----+-------------------+
-             |                        |                        |
-             v                        v                        v
-  /---------------------\  /---------------------\  /---------------------\
-  | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |
-  +---------------------+  +---------------------+  +---------------------+
-  |      Suricata       |  |      Suricata       |  |      Suricata       |
-  \---------------------/  \---------------------/  \---------------------/
+                      live traffic stream or recorded archive
+                                        |
+            +--------------------+------+----------+-----------------+
+            |                    |                 |                 |
+            v                    v                 v                 v
+  /-------------------\   /--------------\  /--------------\  /--------------\
+  | fasguard‐ad‐host‐ |   |    other     |  |    other     |  |    legacy    |
+  |  peering sensor   |   |    sensor    |  |    sensor    |  |    sensor    |
+  +-------------------+   +--------------+  +--------------+  +--------------+
+  |    fasguardlib‐   |   | fasguardlib‐ |  | fasguardlib‐ |  | fasguardlib‐ |
+  |       ad‐tx       |   |    ad‐tx     |  |    ad‐tx     |  |    ad‐tx     |
+  \----------+--------/   \------+-------/  \------+-------/  \------+-------/
+            |                    |                 |                 |
+            |                    |                 +--------+--------+
+            |                    | "bad" packet data (STIX) |
+            |                    |                          v
+            |                    |          /------------------------------\
+            |                    |          |       fasguardlib‐ad‐rx      |
+            |                    |          +------------------------------+
+            |                    |          | aggregator/legacy translator |
+            |                    |          +------------------------------+
+            |                    |          |       fasguardlib‐ad‐tx      |
+            |                    |          \---------------+--------------/
+            |                    |                          |
+            +--------------------+--------------------------+
+                                 |
+                                 v
+                 /-------------------------------\
+                 |       fasguardlib‐ad‐rx       |
+                 +-------------------------------+
+                 |         fasguard‐asg          |
+                 | automatic signature generator |<---- "good" packet data
+                 |        (detailed below)       |      (detailed below)
+                 +-------------------------------+
+                 |      fasguardlib‐rule‐tx      |
+                 \---------------+---------------/
+                                 |
+                 +---------------+------------+
+                 |     IDS rules (TAXII)      |
+                 v                            v
+      /---------------------\      /---------------------\
+      | fasguardlib‐rule‐rx |      | fasguardlib‐rule‐rx |
+      +---------------------+      +---------------------+
+      |      Suricata       |      |  rule distributor   |
+      \---------------------/      +---------------------+
+                                   | fasguardlib‐rule‐tx |
+                                   \----------+----------/
+                                              | IDS rules (TAXII)
+                +------------------------+----+-------------------+
+                |                        |                        |
+                v                        v                        v
+     /---------------------\  /---------------------\  /---------------------\
+     | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |  | fasguardlib‐rule‐rx |
+     +---------------------+  +---------------------+  +---------------------+
+     |      Suricata       |  |      Suricata       |  |      Suricata       |
+     \---------------------/  \---------------------/  \---------------------/
 #+END_SRC
 
 ** Automatic Signature Generator
