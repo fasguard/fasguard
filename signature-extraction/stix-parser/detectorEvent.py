@@ -1,5 +1,3 @@
-# 2014.11.04 20:18:28 PST
-#Embedded file name: /mnt/hgfs/dwyschogrod/fasguard-git/fasguard/signature-extraction/stix-parser/detectorEvent.py
 """
 SYNOPSIS
 
@@ -23,6 +21,7 @@ from pprint import pformat
 import datetime
 import base64
 import math
+import calendar
 
 class AttackPacket:
     """
@@ -75,6 +74,7 @@ class DetectorEvent:
                 self.parseFST(input_file)
             elif re.match(r'.*\.xml', input_file):
                 self.logger.debug('STIX file: %s', input_file)
+                self.parseXML(input_file)
             else:
                 self.logger.error('Bad file name: %s', input_file)
                 sys.exit(-1)
@@ -173,8 +173,11 @@ class DetectorEvent:
         string ready for output. It first converts the object into a hash of the
         right format and then converts it into XML using STIXPackage.from_dict
         and to_xml on the resulting object.
+
+        Returns:
+
+        Reference to string containing STIX/CybOX XML file.
         """
-        self.logger = logging.getLogger('simple_example')
         self.logger.debug('In toStixXml')
         stixDict = {'campaigns': [{}],
          'courses_of_action': [{}],
@@ -259,3 +262,77 @@ class DetectorEvent:
         self.logger.debug('After constructor')
         stix_xml = stix_package.to_xml()
         return stix_xml
+    def parseXML(self, xml_file):
+        """
+        This method takes a STIX/CybOX XML file and stores the content as a
+        DetectorEvent object.
+
+        Arguments:
+
+        xml_file - Name of XML file in STIX/CybOX format to use as input to
+                create the DetectorEvent objet.
+
+        Returns:
+
+        None
+        """
+        self.logger.debug('In toStixXml')
+        stix_package = STIXPackage.from_xml(xml_file)
+        stix_dict = stix_package.to_dict()
+
+        # Extract attack instances
+        related_observables_list = stix_dict['incidents']
+        self.logger.debug('Number of Attacks: %d',len(related_observables_list))
+
+        for r_obs in related_observables_list:
+            observable_list = r_obs['related_observables']['observables']
+            packet_list = []
+            for obs in observable_list:
+                ap = self.makeAttackPacket(obs)
+                packet_list.append(ap)
+            ai = AttackInstance(packet_list)
+            self.attackInstanceList.append(ai)
+    def makeAttackPacket(self, observable):
+        """
+        Takes 'observable' dictionary and extracts the necessary information to
+        return an AttackInstance object
+
+        Arguments:
+        observable - An observable dictionary extracted from a STIX dictionary.
+
+        Returns:
+        An AttackInstance object.
+        """
+        m = re.search(r'ProbAttack=([0-9.]+)',
+                      observable['observable']['keywords'][0])
+        prob_attack = 0.0
+        if m:
+            prob_attack = float(m.group(1))
+        else:
+            self.logger.error('Unabale to find ProbAttack keyworkd')
+            sys.exit(-1)
+        if (observable['observable']['object']['properties']['packaging']
+            [0]['algorithm'] != 'Base64'):
+            self.logger.error('Packet encoding not Base64')
+            sys.exit(-1)
+        base64_packet = (observable['observable']['object']['properties']
+                         ['raw_artifact'])
+        binary_packet = base64.b64decode(base64_packet)
+        received_time = (observable['observable']['observable_source'][0]
+                         ['time']['received_time'])
+        self.logger.debug('Received time: %s',received_time)
+        m = re.search(r'(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(?:\.(\d+))?',
+                      received_time)
+        if m.group(7):
+            self.logger.debug('usec = %s',m.group(7))
+        if not m:
+            self.logger.debug('Date match failed')
+            sys.exit(-1)
+
+        time_tuple = (int(m.group(1)),int(m.group(2)),int(m.group(3)),
+                      int(m.group(4)),int(m.group(5)),int(m.group(6)),
+                      0,0,False)
+        usec = (float(m.group(7))/1000000.0) if m.group(7) else 0.0
+        epoch_time = calendar.timegm(time_tuple) + usec
+        self.logger.debug('Epoch Time: %f',epoch_time)
+        return AttackPacket(prob_attack, epoch_time, binary_packet)
