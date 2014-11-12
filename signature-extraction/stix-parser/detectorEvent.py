@@ -22,6 +22,7 @@ import datetime
 import base64
 import math
 import calendar
+import time
 
 class AttackPacket:
     """
@@ -331,8 +332,13 @@ class DetectorEvent:
 
         time_tuple = (int(m.group(1)),int(m.group(2)),int(m.group(3)),
                       int(m.group(4)),int(m.group(5)),int(m.group(6)),
-                      0,0,False)
+                      0,0,True)
+
+
         usec = (float(m.group(7))/1000000.0) if m.group(7) else 0.0
+        #usec = 0.0
         epoch_time = calendar.timegm(time_tuple) + usec
+        epoch_time_from_local = time.mktime(time_tuple) + usec
+        self.logger.debug('Epoch time from local: %f',epoch_time_from_local)
         self.logger.debug('Epoch Time: %f',epoch_time)
-        return AttackPacket(prob_attack, epoch_time, binary_packet)
+        return AttackPacket(prob_attack, epoch_time_from_local, binary_packet)

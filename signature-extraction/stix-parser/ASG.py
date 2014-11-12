@@ -19,6 +19,11 @@ from detectorEvent import DetectorEvent
 
 def process_detection(filename):
     de = DetectorEvent(filename)
+    xml_again = de.toStixXml()
+    ofh = open('stix_again.xml','w')
+    ofh.write(xml_again)
+    ofh.close()
+
 def setup():
     parser = argparse.ArgumentParser(
         description='Takes homegrown file for description of an event and '+
