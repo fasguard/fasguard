@@ -23,10 +23,12 @@ import base64
 import math
 import calendar
 import time
+import dpkt
 
 class AttackPacket:
     """
     This class contains both metadata and payload data for a single packet.
+    We use dpkt to parse the packet header and content.
 
     Arguments:
     prob_of_attack - A double representing the probability that this packet is
@@ -36,10 +38,21 @@ class AttackPacket:
     """
 
     def __init__(self, prob_of_attack, time_stamp, payload):
+        self.logger = logging.getLogger('simple_example')
         self.probAttack = prob_of_attack
         self.timeStamp = time_stamp
-        self.payload = payload
-
+        self.packet = payload
+        eth = dpkt.ethernet.Ethernet(payload)
+        self.logger.debug('In AttackPacket constructor')
+        #self.logger.debug('Raw packet: %s',payload.encode('hex'))
+        #self.logger.debug('eth=%s',str(eth))
+        #print eth
+        ip = eth.data
+        tcp = ip.data
+        #self.logger.debug('TCP destination port: %d',tcp.dport)
+        if ip.p == dpkt.ip.IP_PROTO_TCP:
+            tcp = ip.data
+            self.logger.debug('TCP destination port: %d',tcp.dport)
 
 class AttackInstance:
     """
@@ -162,9 +175,14 @@ class DetectorEvent:
                 for ts, pkt in pc:
                     dtime = datetime.datetime.fromtimestamp(
                         int(ts)).strftime('%Y-%m-%d %H:%M:%S')
-                    self.logger.debug('Time:', dtime)
+                    #self.logger.debug('Time:', dtime)
                     time_stamps.append(ts)
-                    payloads.append(pkt)
+                    self.logger.debug("Raw packet: %s",str(pkt).encode('hex'))
+                    payloads.append(str(pkt))
+                    #eth = dpkt.ethernet.Ethernet(pkt)
+                    #pprint(eth)
+                    #self.logger.debug('eth: %s',str(eth))
+                    #print eth
 
         f.close()
 
@@ -247,7 +265,38 @@ class DetectorEvent:
                 properties_dict['properties'] = packet_dict
                 packet_dict['packaging'] = [{'algorithm': 'Base64',
                   'packaging_type': 'encoding'}]
-                packet_dict['raw_artifact'] = base64.b64encode(packet.payload)
+                packet_dict['raw_artifact'] = base64.b64encode(
+                    str(packet.packet))
+                eth = dpkt.ethernet.Ethernet(str(packet.packet))
+                self.logger.debug('eth as string: %s',pformat(eth))
+                b64_decode = base64.b64decode(base64.b64encode(packet.packet))
+                v1 = pformat(packet.packet)
+                self.logger.debug('First version: %s',str(packet.packet).encode('hex'))
+
+                v2 = pformat(packet.packet)
+                self.logger.debug('Second version: %s',b64_decode.encode('hex'))
+                pprint(b64_decode)
+                # if b64_decode != packet.packet:
+                #     self.logger.debug('Round trip failed')
+                #     self.logger.debug('Types: %s, %s',type(b64_decode),
+                #                       type(packet.packet))
+                #     self.logger.debug('Length %d -> %d',
+                #                       len(b64_decode),len(packet.packet))
+
+                #     packet_list = list(packet.packet)
+                #     b64_list = list(b64_decode)
+                #     for i in range(len(packet.packet)):
+                #         if packet_list[i] != b64_list[i]:
+                #             self.logger.debug('%s != %s',packet_list[i],
+                #                               b64_list[i])
+
+                #     # for i in list(packet.packet):
+                #     #     self.logger.debug('Orig: %s',i)
+
+                #     # for i in list(b64_decode):
+                #     #     self.logger.debug('Decode: %s',i)
+
+                #     sys.exit(-1)
                 packet_dict['type'] = 'Network Traffic'
                 packet_dict['xsi:type'] = 'ArtifactObjectType'
                 data_dict['observable_source'] = [
@@ -318,7 +367,16 @@ class DetectorEvent:
             sys.exit(-1)
         base64_packet = (observable['observable']['object']['properties']
                          ['raw_artifact'])
+        self.logger.debug('base64_packet = %s',base64_packet)
         binary_packet = base64.b64decode(base64_packet)
+        # eth = dpkt.ethernet.Ethernet(binary_packet)
+        # #print eth
+        # ip = eth.data
+        # tcp = ip.data
+        # #self.logger.debug('TCP destination port: %d',tcp.dport)
+        # if ip.p == dpkt.ip.IP_PROTO_TCP:
+        #     tcp = ip.data
+        #     self.logger.debug('TCP destination port: %d',tcp.dport)
         received_time = (observable['observable']['observable_source'][0]
                          ['time']['received_time'])
         self.logger.debug('Received time: %s',received_time)
