@@ -49,10 +49,15 @@ class AttackPacket:
         #print eth
         ip = eth.data
         tcp = ip.data
+        self.protocol = ip.p
+
         #self.logger.debug('TCP destination port: %d',tcp.dport)
         if ip.p == dpkt.ip.IP_PROTO_TCP:
             tcp = ip.data
             self.logger.debug('TCP destination port: %d',tcp.dport)
+            self.Dport = tcp.dport
+            self.Sport = tcp.sport
+            self.payload = tcp.data
 
 class AttackInstance:
     """

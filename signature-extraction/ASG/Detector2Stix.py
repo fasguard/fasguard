@@ -2,28 +2,56 @@
 """
 SYNOPSIS
 
-This is the actual Automatic Signature Generator (ASG) that takes a STIX/
-CybOX XML file from the detector as input and produces Suricata (Snort) rules.
+This method takes a homegrown file format for an incident and converts it into
+the FASGuard STIX format for detectors. It is intended primarily for testing.
 
 DESCRIPTION
 
-We first use the DetectorEvent class to receive XML from the detector and
-transform it into an internal representation. The packet and metadata is then
-transmitted to the C/C++ language ASG module.
+The input file format is:
+
+____
+ATTACK_INSTANCE_NUM = 1
+PCAP_FILE_NAME = attack_instance_1.pcap
+****
+PKT_NUM = 1
+PROB_OF_ATTACK = 0.3
+****
+PKT_NUM = 2
+PROB_OF_ATTACK = 0.4
+****
+PKT_NUM = 3
+PROB_OF_ATTACK = 0.5
+****
+PKT_NUM = 4
+PROB_OF_ATTACK = 0.4
+****
+____
+ATTACK_INSTANCE_NUM = 2
+PCAP_FILE_NAME = attack_instance_2.pcap
+****
+PKT_NUM = 1
+PROB_OF_ATTACK = 0.3
+****
+PKT_NUM = 2
+PROB_OF_ATTACK = 0.4
+****
+____
+
 """
 import logging
 import sys
 import os
 import argparse
-from detectorEvent import DetectorEvent
+from DetectorReports.detectorEvent import DetectorEvent
 
-def process_detection(filename):
+def handle_file(filename):
     de = DetectorEvent(filename)
-    xml_again = de.toStixXml()
-    ofh = open('stix_again.xml','w')
-    ofh.write(xml_again)
+    xml = de.toStixXml()
+    logger = logging.getLogger('simple_example')
+    ofh = open('stix.xml','w')
+    ofh.write(xml)
     ofh.close()
-
+    #logger.debug('XML: $s',xml)
 def setup():
     parser = argparse.ArgumentParser(
         description='Takes homegrown file for description of an event and '+
@@ -55,6 +83,6 @@ def setup():
 
     logger.debug("In file: %s",args.in_file)
     #sys.exit(-1)
-    process_detection(args.in_file)
+    handle_file(args.in_file)
 if __name__ == '__main__':
     setup()
