@@ -6,15 +6,11 @@ Dependencies:
 
 TODO:
  * Add macros to m4/ and configure.ac:
-  * https://www.gnu.org/software/autoconf-archive/ax_cxx_compile_stdcxx_11.html
-    Until this macro is added, you might need to manually specify
-    CXXFLAGS to enable C++11 support in your compiler. For g++,
-    CXXFLAGS should include -std=gnu++11
   * https://github.com/tsuna/boost.m4
 
 Example commands to build and run host peering:
     ./autogen.sh
-    ./configure CXXFLAGS="-std=gnu++11"
+    ./configure
     make
     ./fasguard-ad-host-peering -h
     ./fasguard-ad-host-peering -r tests/host-peering-test.pcap -o tests/output
