@@ -1,0 +1,5 @@
+                                                <cybox:Observable_Source>
+                                                        <cyboxCommon:Time>
+                                                                <cyboxCommon:Received_Time>%Y-%m-%dT%H:%M:%S.000000Z</cyboxCommon:Received_Time>
+                                                        </cyboxCommon:Time>
+                                                </cybox:Observable_Source>
