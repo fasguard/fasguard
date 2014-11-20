@@ -11,7 +11,8 @@
 
 
 # components (dependencies are specified after the 'all' target below)
-components :=
+components := \
+	fasguardlib-ad-tx
 
 # default target goes first
 all: $(components)
