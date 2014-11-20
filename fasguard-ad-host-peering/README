@@ -4,10 +4,6 @@ Dependencies:
  * libuuid (http://e2fsprogs.sourceforge.net/)
  * boost libraries (http://www.boost.org/)
 
-TODO:
- * Add macros to m4/ and configure.ac:
-  * https://github.com/tsuna/boost.m4
-
 Example commands to build and run host peering:
     ./autogen.sh
     ./configure

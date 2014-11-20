@@ -33,6 +33,14 @@ AC_CHECK_HEADERS([pcap/pcap.h syslog.h fasguardlib-ad-tx.h], [], [
     AC_MSG_FAILURE([a required header file is missing or does not compile properly])
 ])
 
+BOOST_REQUIRE([1.40])
+BOOST_FIND_HEADER([boost/multi_index/hashed_index.hpp])
+BOOST_FIND_HEADER([boost/multi_index/member.hpp])
+BOOST_FIND_HEADER([boost/multi_index/ordered_index.hpp])
+BOOST_FIND_HEADER([boost/multi_index_container.hpp])
+BOOST_HASH
+BOOST_MATH
+
 AC_TYPE_INTMAX_T
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
