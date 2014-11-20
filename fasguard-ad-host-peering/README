@@ -1,0 +1,12 @@
+Dependencies:
+ * compiler that supports C++11
+ * libpcap (http://www.tcpdump.org/)
+ * libuuid (http://e2fsprogs.sourceforge.net/)
+ * boost libraries (http://www.boost.org/)
+
+Example commands to build and run host peering:
+    ./autogen.sh
+    ./configure
+    make
+    ./fasguard-ad-host-peering -h
+    ./fasguard-ad-host-peering -r tests/host-peering-test.pcap -o tests/output
