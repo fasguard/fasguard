@@ -12,6 +12,7 @@
 
 # components (dependencies are specified after the 'all' target below)
 components := \
+	fasguard-ad-host-peering \
 	fasguardlib-ad-tx
 
 # default target goes first
@@ -19,6 +20,7 @@ all: $(components)
 .PHONY: all
 
 # component dependencies go here
+fasguard-ad-host-peering: fasguardlib-ad-tx
 
 # handy macros
 quote = '$(subst ','\'',$(1))'#'
