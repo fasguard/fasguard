@@ -15,29 +15,41 @@ import logging
 import sys
 import os
 import argparse
+import AsgEngine
+#import boost_log
+import ctypes
+from properties.envProperties import EnvProperties
 from DetectorReports.detectorEvent import DetectorEvent
 from DetectorReports.detector_xmt_ext import DetectorReport;
 
-def process_detection(filename):
-    de = DetectorEvent(filename)
-    xml_again = de.toStixXml()
-    ofh = open('stix_again.xml','w')
-    ofh.write(xml_again)
-    ofh.close()
-    dr = DetectorReport()
-    for attack in de.attackInstanceList:
-        dr.appendAttack()
-        for attack_packet in attack.packetList:
-            dr.appendPacket(attack_packet.timeStamp, attack_packet.protocol,
-                            attack_packet.Sport, attack_packet.Dport,
-                            attack_packet.payload, attack_packet.probAttack)
+def process_detection(filename,properties,debug):
+    # de = DetectorEvent(filename)
+    # xml_again = de.toStixXml()
+    # ofh = open('stix_again.xml','w')
+    # ofh.write(xml_again)
+    # ofh.close()
+    # dr = DetectorReport()
+    # for attack in de.attackInstanceList:
+    #     dr.appendAttack()
+    #     for attack_packet in attack.packetList:
+    #         dr.appendPacket(attack_packet.timeStamp, attack_packet.protocol,
+    #                         attack_packet.Sport, attack_packet.Dport,
+    #                         attack_packet.payload, attack_packet.probAttack)
+    max_depth = int(properties.getProperty('ASG.MaxDepth'))
+    asg_e = AsgEngine.PyAsgEngine(filename,max_depth,debug)
+    asg_e.loadDetectorEvent()
+    asg_e.makeTries()
+
 def setup():
     parser = argparse.ArgumentParser(
         description='Takes homegrown file for description of an event and '+
         'converts it to a FASGuard STIX XML file')
-    parser.add_argument("in_file",help='File with homebrew attack info')
+    parser.add_argument("in_file",help='File with homebrew attack info',
+                        default='stix.xml')
     parser.add_argument('-d','--debug',required=False,action='store_true',
                         help='run with debug logging')
+    parser.add_argument('-p','--properties',type=str,required=False,
+                        default='asg.properties',help='properties file')
 
     args = parser.parse_args()
     #print "In file: ",args.in_file
@@ -62,6 +74,9 @@ def setup():
 
     logger.debug("In file: %s",args.in_file)
     #sys.exit(-1)
-    process_detection(args.in_file)
+    properties = EnvProperties(args.properties)
+    process_detection(args.in_file,properties,args.debug)
 if __name__ == '__main__':
+    my_lib = ctypes.cdll.LoadLibrary(
+        '/usr/lib/x86_64-linux-gnu/libboost_log.so.1.54.0')
     setup()

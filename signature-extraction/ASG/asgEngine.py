@@ -1,0 +1,74 @@
+"""
+SYNOPSIS
+
+This is the high level object that takes in the STIX format detection report
+and outputs the signatures.
+
+DESCRIPTION
+
+The processing steps are:
+
+1) Convert detection report XML to DetectorEvent object.
+2) Convert DetectorEvent (Python object) to DetectorReport (C++ Object)
+
+The actual processing is done in a C++ object that we initialize and then
+invoke the processing steps one at a time.
+"""
+import logging
+import sys
+import os
+import re
+import pcap
+from stix.core import STIXPackage
+from pprint import pprint
+from pprint import pformat
+import datetime
+import base64
+import math
+import calendar
+import time
+import dpkt
+
+from CppAsgEngine.asg_engine_ext import AsgEngine;
+from DetectorReports.detectorEvent import DetectorEvent
+
+class PyAsgEngine:
+    """
+    Goes through processing steps to convert detector report XML to signatures.
+    """
+    def __init__(self, xml_file, max_depth, debug):
+        """
+        Constructor which provides STIX file from which signatures will be
+        produced.
+
+        Arguments:
+        xml_file - STIX compliant XML file.
+        max_depth - Max depth of trie. Negative number means unlimited depth.
+        debug -Boolean, true if debug is on.
+        """
+        self.properties = {}
+        self.properties['max_depth'] = max_depth
+        self.cppAsgEngine = AsgEngine(self.properties, debug)
+        self.detectorEvent = DetectorEvent(xml_file)
+        self.debug = debug
+    def loadDetectorEvent(self):
+        """
+        Method to transfer data from Python DectectorEvent to a
+        DetectorReport in the C++ code.
+        """
+        for attack in self.detectorEvent.attackInstanceList:
+            self.cppAsgEngine.appendAttack()
+            for attack_packet in attack.packetList:
+                self.cppAsgEngine.appendPacket(attack_packet.timeStamp,
+                                               attack_packet.protocol,
+                                               attack_packet.Sport,
+                                               attack_packet.Dport,
+                                               attack_packet.payload,
+                                               attack_packet.probAttack)
+    def makeTries(self):
+        """
+        Takes each packet in each attack and converts it to a Trie.
+        """
+        logger = logging.getLogger('simple_example')
+        logger.debug('In Python makeTries')
+        self.cppAsgEngine.makeTries()

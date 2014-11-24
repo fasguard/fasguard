@@ -24,7 +24,7 @@ DetectorReport::~DetectorReport()
 void
 DetectorReport::appendAttack()
 {
-  attacks_.push_back(std::vector<Packet *>());
+  m_attacks.push_back(std::vector<boost::shared_ptr<Packet> >());
 }
 
 void
@@ -32,6 +32,10 @@ DetectorReport::appendPacket(double time, int service, int sport, int dport,
                     std::string payload, float prob_attack)
 {
   std::cout << "TIME: " << time << std::endl;
-  attacks_.back().push_back(new Packet(time,service,sport,dport,payload,
-                                       prob_attack));
+  m_attacks.back().push_back(boost::shared_ptr<Packet>(new
+                                                       Packet(time,
+                                                              service,
+                                                              sport,dport,
+                                                              payload,
+                                                              prob_attack)));
 }

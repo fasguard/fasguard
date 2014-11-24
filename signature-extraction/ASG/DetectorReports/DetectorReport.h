@@ -1,5 +1,6 @@
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
 
@@ -23,19 +24,28 @@ class Packet
    */
   Packet(double time, int service, int sport, int dport, std::string payload,
          float prob_attack) : time_(time),service_(service),sport_(sport),
-    dport_(dport),payload_(payload),prob_attack_(prob_attack)
+    dport_(dport),m_payload(payload),prob_attack_(prob_attack)
   {}
   /**
    * Destructor.
    */
   ~Packet()
     {}
+  /**
+   * Accessor for packet payload.
+   * @return Payload as string.
+   */
+  const std::string &
+    getPayload() const
+  {
+    return m_payload;
+  }
  private:
   double time_;
   int service_;
   int sport_;
   int dport_;
-  std::string payload_;
+  std::string m_payload;
   float prob_attack_;
 };
 
@@ -54,7 +64,7 @@ class DetectorReport
    */
   DetectorReport();
   /**
-   * Destructor/
+   * Destructor.
    */
   ~DetectorReport();
   /**
@@ -74,6 +84,28 @@ class DetectorReport
    */
   void appendPacket(double time, int service, int sport, int dport,
                     std::string payload, float prob_attack);
+  /**
+   * Accessor for start iterator for vector that contains Packets for a single
+   * attack.
+   * @return Start iterator for list of vectors where each vector contsins
+   *    packets for a single attack.
+   */
+  std::vector<std::vector<boost::shared_ptr<Packet> > >::const_iterator
+    getAttackStartIterator()
+    {
+      return m_attacks.begin();
+    }
+  /**
+   * Accessor for end iterator for vector that contains Packets for a single
+   * attack.
+   * @return End iterator for list of vectors where each vector contsins
+   *    packets for a single attack.
+   */
+  std::vector<std::vector<boost::shared_ptr<Packet> > >::const_iterator
+    getAttackEndIterator()
+    {
+      return m_attacks.end();
+    }
  private:
-  std::vector<std::vector<Packet *> > attacks_;
+  std::vector<std::vector<boost::shared_ptr<Packet> > > m_attacks;
 };

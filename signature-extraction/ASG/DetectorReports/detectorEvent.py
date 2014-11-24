@@ -76,7 +76,6 @@ class DetectorEvent:
     This class contains the data for a detector event which can consist of
     multiple instances of the same attack.
     """
-
     def __init__(self, input_file = None):
         """
         Constructor.
