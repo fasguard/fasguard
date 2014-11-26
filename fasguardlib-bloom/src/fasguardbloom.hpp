@@ -126,6 +126,8 @@ public:
         Otherwise, create a new bloom filter with the specified
         parameters and create the backing file.
 
+        @todo Treat it as an error if parameters.bitlength / 8 &gt;
+            SIZE_MAX.
     */
     bloom_filter(
         bloom_filter_parameters const & parameters,
@@ -200,7 +202,6 @@ protected:
     inline void bit_set(
         bloom_filter_parameters::index_type index)
     {
-        // TODO: fix this if sizeof(uint8_t *) < 8
         m_data[index / 8] |= 1 << (index % 8);
     }
 
@@ -211,7 +212,6 @@ protected:
         bloom_filter_parameters::index_type index)
         const
     {
-        // TODO: fix this if sizeof(uint8_t *) < 8
         return m_data[index / 8] & (1 << (index % 8));
     }
 
@@ -221,7 +221,6 @@ protected:
     inline bool bit_testset(
         bloom_filter_parameters::index_type index)
     {
-        // TODO: fix this if sizeof(uint8_t *) < 8
         uint8_t & datum = m_data[index / 8];
         uint_fast8_t const mask = 1 << (index % 8);
         bool const ret = datum & mask;
