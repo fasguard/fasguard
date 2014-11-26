@@ -1,4 +1,3 @@
-#include <boost/functional/hash.hpp>
 #include <cmath>
 
 #include <fasguardbloom.hpp>
@@ -150,45 +149,44 @@ static uint_least32_t const hash_seeds[MAX_HASHES] = {
 /**
     @brief Compute a hash.
 
-    @todo Add a parameter <tt>size_t bins</tt>, and ensure that the
-        return value is in the range [0, bins). Make sure to return
-        integers uniformly distributed in this range, i.e.,
-        <tt>result % bins</tt> is wrong. Also see the below note: the
-        type of <tt>bins</tt> should match the return type; if the
-        return type changes, <tt>bins</tt> should be that type, not
-        <tt>size_t</tt>.
-
-    @todo Figure out how to deal with the possible difference between
-        size_t (the return type of this function and the type used by
-        boost::hash_combine) and uint_fast64_t (the length and index
-        type used by bloom_filter). If we didn't support serializing
-        to disk, a simple solution would be to return an error if the
-        user tries to create a bloom filter with more than SIZE_MAX
-        bits (not bytes!). However, if we want a 32-bit system to be
-        able to read a bloom filter written on a 64-bit system, that
-        solution is problematic. Maybe consider writing our own
-        hash_combine function that operates on uint_fast64_t.
+    @todo Implement this. There are a number of pitfalls to avoid:
+        - Boost and the STL provide hash functions, and boost provides
+          hash_combine to hash multiple items in order. Those are
+          probably all useless here for a two related reasons:
+          - They use size_t arithmetic instead of fixed-width
+            arithmetic. A hash computed with one size of size_t
+            will probably not be equal to the hash of the same data
+            computed with a different sized size_t.
+          - They don't appear to guarrantee the same hash results
+            across time, platforms, implementations, or much of
+            anything else that can change between when one program
+            computes a hash and another program computes a hash of
+            the same data.
+        - In general, the modulo operator does not map a uniform
+          distribution to another uniform distribution. E.g., if you
+          compute <tt>x</tt> uniformly distributed in
+          [0, <tt>UINT64_MAX</tt>], then <tt>x % bins</tt> is not
+          guranteed to be uniformly distributed. If <tt>bins</tt>
+          is a power of two, this problem is avoided.
+        - Computing hashes with blind multiplication is a bad idea.
+          Once you've multiplied 64 even numbers, the
+          least-significant 64 bits of the result are all zero.
 
     @param[in] hash_number Which hash to compute. Must be less than
         #MAX_HASHES.
+    @param[in] bins Number of bins in the filter.
     @param[in] data Data to hash.
     @param[in] length Length of @p data.
+    @return An integer uniformly distributed in the range
+        [0, <tt>bins</tt>).
 */
-static size_t compute_hash(
+static bloom_filter_parameters::index_type compute_hash(
     size_t hash_number,
+    bloom_filter_parameters::index_type bins,
     uint8_t const * data,
     size_t length)
 {
-    size_t result = 0;
-
-    boost::hash_combine(result, hash_seeds[hash_number]);
-
-    for (size_t i = 0; i < length; ++i)
-    {
-        boost::hash_combine(result, data[i]);
-    }
-
-    return result;
+    return 0; // XXX: this is wrong, of course
 }
 
 
