@@ -1,10 +1,10 @@
 AC_PREREQ(2.59)
-AC_INIT(fasguardlib-bloom, 0.1, dwyschog@bbn.com)
+AC_INIT(fasguardlib-filter, 0.1, dwyschog@bbn.com)
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES
-AC_CONFIG_SRCDIR([src/fasguardbloom.hpp])
+AC_CONFIG_SRCDIR([src/fasguardfilter.hpp])
 LT_INIT
 
 AM_MAINTAINER_MODE

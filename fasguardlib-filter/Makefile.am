@@ -16,4 +16,4 @@ include_HEADERS =
 lib_LTLIBRARIES =
 
 
-include mk/libfasguardbloom.mk
+include mk/libfasguardfilter.mk
