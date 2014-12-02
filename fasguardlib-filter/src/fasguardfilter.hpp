@@ -1,4 +1,5 @@
-// TODO: header guards
+#ifndef LIBFASGUARDFILTER_FASGUARDFILTER_H
+#define LIBFASGUARDFILTER_FASGUARDFILTER_H
 
 #include <inttypes.h>
 #include <string>
@@ -254,3 +255,5 @@ private:
 };
 
 }
+
+#endif
