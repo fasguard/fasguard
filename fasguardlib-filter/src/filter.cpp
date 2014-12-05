@@ -75,6 +75,70 @@ void serializable_filter_header::error_version(
 }
 
 
+class placeholder_filter_header_type
+:
+    public serializable_filter_header
+{
+public:
+    virtual bool serialize(
+        void * buffer,
+        size_t & offset,
+        size_t length)
+        const
+    {
+        static char const hdr[] = "placeholder_filter_header_type";
+
+        return serialize_datum<uint8_t>(
+            hdr, 0, NULL,
+            buffer, offset, length,
+            0);
+    }
+
+    virtual bool unserialize(
+        void const * buffer,
+        size_t & offset,
+        size_t length)
+    {
+        static char const hdr[] = "placeholder_filter_header_type";
+
+        uint8_t byte;
+        if (!unserialize_datum(
+            hdr, 0, NULL,
+            buffer, offset, length,
+            byte))
+        {
+            return false;
+        }
+
+        if (byte != 0)
+        {
+            snprintf(
+                serialize_error_string, sizeof(serialize_error_string),
+                "Expected placeholder at offset %zu "
+                "in buffer of length %zu, but found something else. "
+                "This may be caused by attempting to read a file "
+                "that was written with a newer version of this software.",
+                offset,
+                length);
+            return false;
+        }
+
+        return true;
+    }
+
+    placeholder_filter_header_type();
+
+private:
+    placeholder_filter_header_type(
+        placeholder_filter_header_type const & other);
+
+    placeholder_filter_header_type & operator=(
+        placeholder_filter_header_type const & other);
+};
+
+static placeholder_filter_header_type placeholder_filter_header;
+
+
 std::string filter_parameters::to_string() const
 {
     static std::string const ret("no_parameters");
