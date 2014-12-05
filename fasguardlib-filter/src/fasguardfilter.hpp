@@ -599,6 +599,8 @@ protected:
         filter_statistics * statistics_);
 
 private:
+    filter();
+
     filter(
         filter const & other);
 
