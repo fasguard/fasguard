@@ -346,7 +346,7 @@ filter::~filter()
 }
 
 filter::filter(
-    filter_parameters const * parameters_,
+    filter_parameters * parameters_,
     filter_statistics * statistics_)
 :
     parameters(parameters_),

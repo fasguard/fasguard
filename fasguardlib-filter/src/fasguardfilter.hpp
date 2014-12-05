@@ -567,7 +567,7 @@ public:
     /**
         @brief Parameters for this filter.
     */
-    filter_parameters const * const parameters;
+    filter_parameters * parameters;
 
     /**
         @brief Statistics for this filter.
@@ -577,7 +577,7 @@ public:
         The statistics may be updated even when <tt>this</tt> is
         const.
     */
-    filter_statistics * const statistics;
+    filter_statistics * statistics;
 
 protected:
     /**
@@ -591,7 +591,7 @@ protected:
             #~filter.
     */
     filter(
-        filter_parameters const * parameters_,
+        filter_parameters * parameters_,
         filter_statistics * statistics_);
 
 private:
