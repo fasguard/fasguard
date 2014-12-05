@@ -290,8 +290,6 @@ public:
     */
     virtual ~filter_parameters();
 
-    friend class filter;
-
 protected:
     /**
         @brief Default constructor.
@@ -317,9 +315,6 @@ class serializable_filter_parameters
 public:
     virtual ~serializable_filter_parameters();
 
-protected:
-    serializable_filter_parameters();
-
     virtual bool serialize(
         void * buffer,
         size_t & offset,
@@ -330,6 +325,9 @@ protected:
         void const * buffer,
         size_t & offset,
         size_t length);
+
+protected:
+    serializable_filter_parameters();
 
 private:
     /**
@@ -393,8 +391,6 @@ public:
     */
     uint_fast64_t unique_insertions;
 
-    friend class filter;
-
 protected:
     /**
         @brief Default constructor.
@@ -456,12 +452,6 @@ class serializable_filter_statistics
 public:
     virtual ~serializable_filter_statistics();
 
-protected:
-    /**
-        @brief Default constructor.
-    */
-    serializable_filter_statistics();
-
     virtual bool serialize(
         void * buffer,
         size_t & offset,
@@ -472,6 +462,12 @@ protected:
         void const * buffer,
         size_t & offset,
         size_t length);
+
+protected:
+    /**
+        @brief Default constructor.
+    */
+    serializable_filter_statistics();
 
 private:
     serializable_filter_statistics(
