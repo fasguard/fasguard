@@ -3,12 +3,77 @@
 #define __STDC_LIMIT_MACROS
 
 #include <cstdio>
+#include <cstring>
 #include <inttypes.h>
 
 #include <fasguardfilter.hpp>
 
 namespace fasguard
 {
+
+bool serializable_filter_header::serialize(
+    void * buffer,
+    size_t & offset,
+    size_t length)
+    const
+{
+    (void)buffer;
+    (void)offset;
+    (void)length;
+    return true;
+}
+
+bool serializable_filter_header::unserialize(
+    void const * buffer,
+    size_t & offset,
+    size_t length)
+{
+    (void)buffer;
+    (void)offset;
+    (void)length;
+    return true;
+}
+
+void serializable_filter_header::error_out_of_space(
+    size_t offset,
+    size_t length,
+    char const * header,
+    uintmax_t header_version,
+    char const * field,
+    bool serialize)
+    const
+{
+    snprintf(
+        serialize_error_string, sizeof(serialize_error_string),
+        "%s header %s version %" PRIuMAX ", %s%s%s"
+        "at offset %zu in buffer of length %zu",
+        (serialize ? "insufficient space to write" : "truncated"),
+        header,
+        header_version,
+        (field == NULL ? "" : "field "),
+        (field == NULL ? "" : field),
+        (field == NULL ? "" : ", "),
+        offset,
+        length);
+}
+
+void serializable_filter_header::error_version(
+    size_t offset,
+    size_t length,
+    char const * header,
+    uintmax_t header_version)
+    const
+{
+    (void)length;
+    snprintf(
+        serialize_error_string, sizeof(serialize_error_string),
+        "unsupported version (%" PRIuMAX ") for header %s "
+        "at offset %zu",
+        header_version,
+        header,
+        offset);
+}
+
 
 std::string filter_parameters::to_string() const
 {
@@ -18,6 +83,65 @@ std::string filter_parameters::to_string() const
 
 filter_parameters::~filter_parameters()
 {
+}
+
+
+serializable_filter_parameters::~serializable_filter_parameters()
+{
+}
+
+bool serializable_filter_parameters::serialize(
+    void * buffer,
+    size_t & offset,
+    size_t length)
+    const
+{
+    static char const hdr[] = "serializable_filter_parameters";
+    static uint8_t const ver = SERIALIZE_V0;
+
+    return (
+        // version
+        serialize_datum(
+            hdr, ver, "version",
+            buffer, offset, length,
+            ver) &&
+
+        // parent classes
+        serializable_filter_header::serialize(
+            buffer, offset, length) &&
+
+        true);
+}
+
+bool serializable_filter_parameters::unserialize(
+    void const * buffer,
+    size_t & offset,
+    size_t length)
+{
+    static char const hdr[] = "serializable_filter_parameters";
+
+    // version
+    uint8_t ver;
+    if (!unserialize_datum(
+        hdr, SERIALIZE_LATEST, "version",
+        buffer, offset, length,
+        ver))
+    {
+        return false;
+    }
+
+    if (ver != SERIALIZE_V0)
+    {
+        error_version(offset, length, hdr, ver);
+        return false;
+    }
+
+    return (
+        // parent classes
+        serializable_filter_header::unserialize(
+            buffer, offset, length) &&
+
+        true);
 }
 
 
@@ -118,6 +242,87 @@ void filter_statistics::on_contains(
     (void)data;
     (void)length;
     (void)contains;
+}
+
+
+serializable_filter_statistics::~serializable_filter_statistics()
+{
+}
+
+bool serializable_filter_statistics::serialize(
+    void * buffer,
+    size_t & offset,
+    size_t length)
+    const
+{
+    static char const hdr[] = "serializable_filter_statistics";
+    static uint8_t const ver = SERIALIZE_V0;
+
+    return (
+        // version
+        serialize_datum(
+            hdr, ver, "version",
+            buffer, offset, length,
+            ver) &&
+
+        // parent classes
+        serializable_filter_header::serialize(
+            buffer, offset, length) &&
+
+        // member variables
+        serialize_datum<uint64_t>(
+            hdr, ver, "insertions",
+            buffer, offset, length,
+            ((insertions > UINT64_MAX) ? UINT64_MAX : insertions)) &&
+        serialize_datum<uint64_t>(
+            hdr, ver, "unique_insertions",
+            buffer, offset, length,
+            ((unique_insertions > UINT64_MAX)
+                ? UINT64_MAX
+                : unique_insertions)) &&
+
+        true);
+}
+
+bool serializable_filter_statistics::unserialize(
+    void const * buffer,
+    size_t & offset,
+    size_t length)
+{
+    static char const hdr[] = "serializable_filter_statistics";
+
+    // version
+    uint8_t ver;
+    if (!unserialize_datum(
+        hdr, SERIALIZE_LATEST, "version",
+        buffer, offset, length,
+        ver))
+    {
+        return false;
+    }
+
+    if (ver != SERIALIZE_V0)
+    {
+        error_version(offset, length, hdr, ver);
+        return false;
+    }
+
+    return (
+        // parent classes
+        serializable_filter_header::unserialize(
+            buffer, offset, length) &&
+
+        // member variables
+        unserialize_datum<uint_fast64_t, 8>(
+            hdr, ver, "insertions",
+            buffer, offset, length,
+            insertions) &&
+        unserialize_datum<uint_fast64_t, 8>(
+            hdr, ver, "unique_insertions",
+            buffer, offset, length,
+            unique_insertions) &&
+
+        true);
 }
 
 

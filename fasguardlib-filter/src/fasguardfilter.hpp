@@ -2,10 +2,273 @@
 #define LIBFASGUARDFILTER_FASGUARDFILTER_H
 
 #include <inttypes.h>
+#include <limits>
 #include <string>
 
 namespace fasguard
 {
+
+/**
+    @brief Interface class for a serializable header to a filter
+        stored on disk.
+
+    Subclasses of #filter_parameters or #filter_statistics that
+    are used by serializable filters should also subclass this.
+*/
+class serializable_filter_header
+{
+public:
+    /**
+        @brief Maximum size, in bytes, of all headers combined for any
+            single file.
+    */
+    static size_t const MAX_HEADER_LENGTH = 1024 * 1024;
+
+    /**
+        @brief Serialize this object to a buffer.
+
+        @note Derived classes must call this method for each of their
+            parents that is equal to or a subclass of
+            #serializable_filter_header.
+
+        @note Every implementation of this that writes anything to
+            @p buffer, should write a version number as the first
+            field. This version number should be incremented every
+            time the implementation changes in an incompatible way.
+            There should also be at least one reserved version number
+            for use to extend the version field when all other
+            possible values are exhausted.
+
+        @note Data must be stored in a way that has the same meaning
+            across platforms. E.g., integers should be stored in
+            network byte order.
+
+        @param[out] buffer Where to serialize this object to.
+        @param[in,out] offset On input, initial offset in @p buffer
+            of where to start serialization. On output, offset to the
+            end of the serialized object. If there's an error, the
+            value of this is undefined.
+        @param[in] length Length of @p buffer.
+        @return True on success, false on failure. On failure,
+            #serialize_error_string contains an error message.
+    */
+    virtual bool serialize(
+        void * buffer,
+        size_t & offset,
+        size_t length)
+        const;
+
+    /**
+        @brief Unserialize a buffer into this object.
+
+        @note Derived classes must call this method for each of their
+            parents that is equal to or a subclass of
+            #serializable_filter_header. The order must match the
+            the order used in #serialize.
+
+        @param[in] buffer Where to unserialize this object from.
+        @param[in,out] offset On input, initial offset in @p buffer
+            of where to start unserialization. On output, offset to
+            the end of the serialized object. If there's an error, the
+            value of this is undefined.
+        @param[in] length Length of @p buffer.
+        @return True on success, false on failure. On failure,
+            #serialize_error_string contains an error message.
+    */
+    virtual bool unserialize(
+        void const * buffer,
+        size_t & offset,
+        size_t length);
+
+    /**
+        @brief String containing the last error message.
+
+        The contents of this are only defined after an unsuccessful
+        call to one of the methods defined in this class.
+
+        This data is not (un)serialized.
+    */
+    mutable char serialize_error_string[256];
+
+protected:
+    serializable_filter_header();
+
+    /**
+        @brief Serialize a single integer.
+
+        This function assumes that the integer type is encoded as
+        either unsigned or twos-complement, and the value fits in the
+        number of bytes allotted.
+
+        @tparam integer_type The type of integer to serialize.
+        @tparam integer_length The number of bytes of @p buffer to
+            use.
+        @param[in] header See #error_out_of_space.
+        @param[in] header_version See #error_out_of_space.
+        @param[in] field See #error_out_of_space.
+        @param[out] buffer Serialization buffer.
+        @param[in,out] offset Where in @p buffer to serialize the
+            integer. This is incremented by integer_length.
+            If there's an error, the value of this is undefined.
+        @param[in] length Length of @p buffer.
+        @param[in] datum Integer to serialize.
+        @return True on success, false on failure. On failure,
+            #serialize_error_string contains an error message.
+    */
+    template <
+        typename integer_type,
+        size_t integer_length = sizeof(integer_type)>
+    bool serialize_datum(
+        char const * header,
+        uintmax_t header_version,
+        char const * field,
+        void * buffer,
+        size_t & offset,
+        size_t length,
+        integer_type const & datum)
+        const
+    {
+        if (offset + integer_length > length)
+        {
+            error_out_of_space(
+                offset, length,
+                header, header_version, field,
+                true);
+            return false;
+        }
+
+        uint8_t * bytes = (uint8_t *)buffer + offset;
+
+        for (size_t i = 0; i < integer_length; ++i)
+        {
+            bytes[i] =
+                (datum >> (8 * (integer_length - i - 1))) & 0xff;
+        }
+
+        offset += integer_length;
+        return true;
+    }
+
+    /**
+        @brief Unserialize a single integer.
+
+        This function assumes that the integer type is encoded as
+        either unsigned or twos-complement, and that
+        <tt>offset + integer_length &lt;= length</tt>.
+
+        @tparam integer_type The type of integer to unserialize.
+        @tparam integer_length The number of bytes of @p buffer to
+            use.
+        @param[in] header See #error_out_of_space.
+        @param[in] header_version See #error_out_of_space.
+        @param[in] field See #error_out_of_space.
+        @param[in] buffer Buffer containing the integer.
+        @param[in,out] offset Where in @p buffer to unserialize the
+            integer from. This is incremented by integer_length.
+            If there's an error, the value of this is undefined.
+        @param[in] length Length of @p buffer. This is not checked.
+        @param[out] datum Result of unserializing.
+        @return True on success, false on failure. On failure,
+            #serialize_error_string contains an error message.
+    */
+    template <
+        typename integer_type,
+        size_t integer_length = sizeof(integer_type)>
+    bool unserialize_datum(
+        char const * header,
+        uintmax_t header_version,
+        char const * field,
+        void const * buffer,
+        size_t & offset,
+        size_t length,
+        integer_type & datum)
+        const
+    {
+        if (offset + integer_length > length)
+        {
+            error_out_of_space(
+                offset, length,
+                header, header_version, field,
+                false);
+            return false;
+        }
+
+        uint8_t const * bytes = (uint8_t const *)buffer + offset;
+
+        // Handle the trivial case first so that the below code can be
+        // simpler.
+        if (integer_length == 0)
+        {
+            datum = 0;
+        }
+
+        // Initialize datum with the correct fill bits.
+        if (std::numeric_limits<integer_type>::is_signed)
+        {
+            if (bytes[0] & 0x80)
+            {
+                datum = -1;
+            }
+            else
+            {
+                datum = 0;
+            }
+        }
+        else
+        {
+            datum = 0;
+        }
+
+        // Fill in bytes from the buffer.
+        for (size_t i = 0; i < integer_length; ++i)
+        {
+            datum = (datum << 8) | bytes[i];
+        }
+
+        offset += integer_length;
+        return true;
+    }
+
+    /**
+        @brief Set #serialize_error_string appropriately for a
+            buffer-out-of-space error.
+
+        @param[in] offset Offset into the buffer.
+        @param[in] length Length of the buffer.
+        @param[in] header Name of the header being (un)serialized.
+            This must not be NULL.
+        @param[in] header_version Version of the header.
+        @param[in] field Name of the field withing the header being
+            (un)serialized. This may be NULL.
+        @param[in] serialize True when serializing, false when
+            unserializing.
+    */
+    void error_out_of_space(
+        size_t offset,
+        size_t length,
+        char const * header,
+        uintmax_t header_version,
+        char const * field,
+        bool serialize)
+        const;
+
+    /**
+        @brief Set #serialize_error_string appropriately for an
+            error trying to unserialize from an unsupported version.
+
+        @param[in] offset Offset into the buffer.
+        @param[in] length Length of the buffer.
+        @param[in] header Name of the header being (un)serialized.
+            This must not be NULL.
+        @param[in] header_version Extracted version of the header.
+    */
+    void error_version(
+        size_t offset,
+        size_t length,
+        char const * header,
+        uintmax_t header_version)
+        const;
+};
 
 /**
     @brief Base class for parameters for a filter.
@@ -41,6 +304,49 @@ private:
 
     filter_parameters & operator=(
         filter_parameters const & other);
+};
+
+/**
+    @brief Base class for #filter_parameters that are serializable.
+*/
+class serializable_filter_parameters
+:
+    public filter_parameters,
+    public serializable_filter_header
+{
+public:
+    virtual ~serializable_filter_parameters();
+
+protected:
+    serializable_filter_parameters();
+
+    virtual bool serialize(
+        void * buffer,
+        size_t & offset,
+        size_t length)
+        const;
+
+    virtual bool unserialize(
+        void const * buffer,
+        size_t & offset,
+        size_t length);
+
+private:
+    /**
+        @brief Type to store the serialize version.
+    */
+    enum serialize_version_type
+    {
+        SERIALIZE_V0 = 0,
+        SERIALIZE_LATEST = SERIALIZE_V0,
+        SERIALIZE_RESERVED = 255,
+    };
+
+    serializable_filter_parameters(
+        serializable_filter_parameters const & other);
+
+    serializable_filter_parameters & operator=(
+        serializable_filter_parameters const & other);
 };
 
 /**
@@ -137,6 +443,52 @@ private:
 
     filter_statistics & operator=(
         filter_statistics const & other);
+};
+
+/**
+    @brief Serializable version of #filter_statistics.
+*/
+class serializable_filter_statistics
+:
+    public filter_statistics,
+    public serializable_filter_header
+{
+public:
+    virtual ~serializable_filter_statistics();
+
+protected:
+    /**
+        @brief Default constructor.
+    */
+    serializable_filter_statistics();
+
+    virtual bool serialize(
+        void * buffer,
+        size_t & offset,
+        size_t length)
+        const;
+
+    virtual bool unserialize(
+        void const * buffer,
+        size_t & offset,
+        size_t length);
+
+private:
+    serializable_filter_statistics(
+        serializable_filter_statistics const & other);
+
+    serializable_filter_statistics & operator=(
+        serializable_filter_statistics const & other);
+
+    /**
+        @brief Type to store the serialize version.
+    */
+    enum serialize_version_type
+    {
+        SERIALIZE_V0 = 0,
+        SERIALIZE_LATEST = SERIALIZE_V0,
+        SERIALIZE_RESERVED = 255,
+    };
 };
 
 /**
