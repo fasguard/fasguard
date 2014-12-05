@@ -418,4 +418,182 @@ filter::filter(
 {
 }
 
+
+file_backed_filter::~file_backed_filter()
+{
+}
+
+file_backed_filter::file_backed_filter(
+    serializable_filter_parameters * parameters_,
+    serializable_filter_statistics * statistics_)
+:
+    filter(parameters_, statistics_)
+{
+}
+
+serializable_filter_header * file_backed_filter::extra_header() const
+{
+    return &placeholder_filter_header;
+}
+
+bool file_backed_filter::serialize(
+    void * buffer,
+    size_t & offset,
+    size_t length)
+    const
+{
+    static char const hdr[] = "file_backed_filter";
+    static uint8_t const ver = SERIALIZE_V0;
+
+    if (!(
+        // version
+        serialize_datum(
+            hdr, ver, "version",
+            buffer, offset, length,
+            ver) &&
+
+        // parent classes
+        serializable_filter_header::serialize(
+            buffer, offset, length) &&
+
+        true))
+    {
+        return false;
+    }
+
+    // parameters
+    serializable_filter_parameters const * const params =
+        static_cast<serializable_filter_parameters const *>(parameters);
+    if (!params->serialize(buffer, offset, length))
+    {
+        strncpy(
+            serialize_error_string,
+            params->serialize_error_string,
+            sizeof(serialize_error_string));
+        return false;
+    }
+
+    // statistics
+    if (!serialize_datum<uint8_t>(
+        hdr, ver, "statistics_is_present",
+        buffer, offset, length,
+        ((statistics == NULL) ? 0 : 1)))
+    {
+        return false;
+    }
+    if (statistics != NULL)
+    {
+        serializable_filter_statistics const * const stats =
+            static_cast<serializable_filter_statistics const *>(statistics);
+        if (!stats->serialize(buffer, offset, length))
+        {
+            strncpy(
+                serialize_error_string,
+                stats->serialize_error_string,
+                sizeof(serialize_error_string));
+            return false;
+        }
+    }
+
+    // extra header
+    serializable_filter_header const * const extra = extra_header();
+    if (!extra->serialize(buffer, offset, length))
+    {
+        strncpy(
+            serialize_error_string,
+            extra->serialize_error_string,
+            sizeof(serialize_error_string));
+        return false;
+    }
+
+    return true;
+}
+
+bool file_backed_filter::unserialize(
+    void const * buffer,
+    size_t & offset,
+    size_t length)
+{
+    static char const hdr[] = "file_backed_filter";
+
+    // version
+    uint8_t ver;
+    if (!unserialize_datum(
+        hdr, SERIALIZE_LATEST, "version",
+        buffer, offset, length,
+        ver))
+    {
+        return false;
+    }
+
+    if (ver != SERIALIZE_V0)
+    {
+        error_version(offset, length, hdr, ver);
+        return false;
+    }
+
+    if (!(
+        // parent classes
+        serializable_filter_header::unserialize(
+            buffer, offset, length) &&
+
+        true))
+    {
+        return false;
+    }
+
+    // parameters
+    serializable_filter_parameters * const params =
+        static_cast<serializable_filter_parameters *>(parameters);
+    if (!params->unserialize(buffer, offset, length))
+    {
+        strncpy(
+            serialize_error_string,
+            params->serialize_error_string,
+            sizeof(serialize_error_string));
+        return false;
+    }
+
+    // statistics
+    uint8_t statistics_is_present;
+    if (!unserialize_datum<uint8_t>(
+        hdr, ver, "statistics_is_present",
+        buffer, offset, length,
+        statistics_is_present))
+    {
+        return false;
+    }
+    if (statistics_is_present)
+    {
+        if (statistics == NULL)
+        {
+            create_filter_statistics();
+        }
+
+        serializable_filter_statistics * const stats =
+            static_cast<serializable_filter_statistics *>(statistics);
+        if (!stats->unserialize(buffer, offset, length))
+        {
+            strncpy(
+                serialize_error_string,
+                stats->serialize_error_string,
+                sizeof(serialize_error_string));
+            return false;
+        }
+    }
+
+    // extra header
+    serializable_filter_header * const extra = extra_header();
+    if (!extra->unserialize(buffer, offset, length))
+    {
+        strncpy(
+            serialize_error_string,
+            extra->serialize_error_string,
+            sizeof(serialize_error_string));
+        return false;
+    }
+
+    return true;
+}
+
 }

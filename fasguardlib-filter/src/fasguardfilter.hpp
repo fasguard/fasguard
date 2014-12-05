@@ -604,6 +604,152 @@ private:
         filter const & other);
 };
 
+/**
+    @brief Base class for a #filter that is backed by a file.
+*/
+class file_backed_filter
+:
+    public filter,
+    public serializable_filter_header
+{
+public:
+    virtual ~file_backed_filter();
+
+    /**
+        @brief Initialize the backing file.
+
+        If the file does not exist, it is created as a new filter.
+        If it already exists, it is loaded as an existing filter.
+
+        This must be called after the constructor and before any other
+        method calls.
+
+        @return True on success, false on error. On error,
+            #file_error_string contains an error message and the
+            state of this object is unspecified.
+    */
+    // TODO: implement
+    bool initialize(
+        char const * filename);
+
+    /**
+        @brief Flush any changes to the backing file.
+
+        @return True on success, false on error. On error,
+            #file_error_string contains an error message and the
+            state of this object is unspecified.
+    */
+    // TODO: implement
+    bool flush();
+
+    /**
+        @brief Close the backing file.
+
+        After this function returns, the state of this object is
+        unspecified.
+
+        @return True on success, false on error. On error,
+            #file_error_string contains an error message.
+    */
+    // TODO: implement
+    bool close();
+
+    /**
+        @brief String containing the last error message.
+
+        The contents of this are only defined after an unsuccessful
+        call to one of the methods defined in this class.
+    */
+    mutable char file_error_string[256];
+
+protected:
+    /**
+        @brief Constructor.
+
+        @param[in] parameters_ See #filter::filter. Note that the type
+            of this parameter is refined from the type in the parent
+            constructor.
+        @param[in] statistics_ See #filter::filter. Even if this is
+            NULL, if the filter is unserialized from a file that
+            contains statistics, the filter will still track
+            statistics. Note that the type of this parameter is
+            refined from the type in the parent constructor.
+    */
+    file_backed_filter(
+        serializable_filter_parameters * parameters_,
+        serializable_filter_statistics * statistics_);
+
+    /**
+        @brief Set #statistics to point to a new object of an
+            appropriate type that's a subclass of
+            #serializable_filter_statistics.
+
+        If this object was created with NULL statistics, and
+        unserialized from a file that contains statistics, then this
+        function will be called to create the statistics object to
+        hold the unserialized statistics.
+    */
+    virtual void create_filter_statistics() = 0;
+
+    /**
+        @brief Return a header containing any extra data not in the
+            parameters or statistics.
+
+        The default implementation returns returns a simple header
+        of a single zero byte. If a subclass does not need to store
+        more data in the header, it may use this default. If a later
+        version of the same subclass needs to store data here, it
+        should gracefully handle the case when its header is a single
+        zero byte (i.e., it's reading a filter written by an older
+        version of itself). If a subclass overrides this method
+        with its own from the first version, then it does not need to
+        handle the single zero byte header returned by this
+        implementation.
+    */
+    virtual serializable_filter_header * extra_header() const;
+
+    // TODO: create non-virtual functions to access the data (not header)
+
+private:
+    /**
+        @brief Serialize the filter header only, not the data.
+    */
+    bool serialize(
+        void * buffer,
+        size_t & offset,
+        size_t length)
+        const;
+
+    /**
+        @brief Unserialize the filter header only, not the data.
+    */
+    bool unserialize(
+        void const * buffer,
+        size_t & offset,
+        size_t length);
+
+    /**
+        @brief Type to store the serialize version.
+    */
+    enum serialize_version_type
+    {
+        SERIALIZE_V0 = 0,
+        SERIALIZE_LATEST = SERIALIZE_V0,
+        SERIALIZE_RESERVED = 255,
+    };
+
+    // TODO: data members needed by the the new public functions and the
+    // protected functions for data access
+
+    file_backed_filter();
+
+    file_backed_filter(
+        file_backed_filter const & other);
+
+    file_backed_filter & operator=(
+        file_backed_filter const & other);
+};
+
 }
 
 #endif
