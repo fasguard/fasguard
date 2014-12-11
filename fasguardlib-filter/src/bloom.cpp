@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include <fasguardbloom.hpp>
+#include <fasguardfilter.hpp>
 
 namespace fasguard
 {
@@ -199,7 +199,7 @@ bloom_filter_parameters::bloom_filter_parameters(
     size_t items,
     double probability_false_positive)
 :
-    version(v0)
+    serializable_filter_parameters()
 {
     // Calculate optimal number of bits and round to the nearest
     // integer.
@@ -234,6 +234,10 @@ bloom_filter_parameters::bloom_filter_parameters(
     }
 }
 
+bloom_filter_parameters::~bloom_filter_parameters()
+{
+}
+
 // TODO: Implement this or remove it from here and fasguardbloom.hpp.
 // The formulas on the wikipedia page[0] are both of the form (1-X)^Y.
 // If X is small and Y is large, the naive computation of that value
@@ -248,6 +252,26 @@ double bloom_filter_parameters::probability_false_positive(
     const
 {
     return NAN; // XXX: this is wrong, of course
+}
+
+
+bloom_filter_statistics::bloom_filter_statistics()
+:
+    serializable_filter_statistics()
+{
+}
+
+
+bloom_filter::bloom_filter(
+    bloom_filter_parameters * parameters_,
+    bloom_filter_statistics * statistics_)
+:
+    file_backed_filter(parameters_, statistics_)
+{
+}
+
+bloom_filter::~bloom_filter()
+{
 }
 
 }

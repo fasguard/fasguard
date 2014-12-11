@@ -11,6 +11,7 @@ include_HEADERS += \
 	src/fasguardfilter.hpp
 
 src_libfasguardfilter_la_SOURCES = \
+	src/bloom.cpp \
 	src/filter.cpp
 
 src_libfasguardfilter_la_LDFLAGS = \
