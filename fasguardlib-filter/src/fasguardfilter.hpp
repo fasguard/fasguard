@@ -606,6 +606,20 @@ private:
 
 /**
     @brief Base class for a #filter that is backed by a file.
+
+    Users of subclasses of this should use a subclass constructor to
+    create an appropriate object. Then call #initialize to initialize
+    the backing file. Users may call #flush as needed. Before the
+    object is destructed, the user must call #close.
+
+    Subclasses should use #reserve to change the size of the backing
+    file, and #access and #commit to read and write to the backing
+    file. This interface is designed to work equally well for
+    read-/write-based access or mmap-based access. Notably, if the
+    file fits in the address space (not necessarily in memory
+    though) and mmap-based access is used, this interface is very low
+    overhead: #access just adds <tt>offset</tt> to the pointer to the
+    beginning of the file, and #commit does nothing.
 */
 class file_backed_filter
 :
@@ -708,7 +722,58 @@ protected:
     */
     virtual serializable_filter_header * extra_header() const;
 
-    // TODO: create non-virtual functions to access the data (not header)
+    /**
+        @brief Type to specify an offset into the backing file.
+    */
+    typedef uint_fast64_t offset_type;
+
+    /**
+        @brief Reserve @p length bytes of data.
+
+        If @p length is greater than the previous length (or if this
+        is the first call to this function), any newly reserved bytes
+        are set to zero. If @p length is less than the previous
+        length, any bytes past @p length must not be accessed any
+        more and their values are no longer guaranteed to be saved.
+
+        @return On success, true. On failure, false is returned and
+            #file_error_string will contain an error message.
+    */
+    // TODO: implement
+    bool reserve(
+        offset_type length);
+
+    /**
+        @brief Access a contiguous chunk of data.
+
+        @param[in] offset Start position of the chunk, in bytes.
+        @param[in] length Length of the chunk, in bytes.
+        @return On success, a pointer to memory containing the data.
+            This memory may be written to, but see #commit. On
+            failure, NULL is returned and #file_error_string will
+            contain an error message.
+
+        @note If <tt>offset + length</tt> exceeds the reserved length
+            (from the previous call to #reserve), then the behavior is
+            unspecified.
+    */
+    // TODO: implement
+    void * access(
+        offset_type offset,
+        size_t length);
+
+    /**
+        @brief Save any changes made to memory returned by the most
+            recent call to #access.
+
+        If changes are made to memory returned by #access and this
+        function is not called, the results are unspecified.
+
+        @return On success, true. On failure, false is returned and
+            #file_error_string will contain an error message.
+    */
+    // TODO: implement
+    bool commit();
 
 private:
     /**
@@ -738,8 +803,8 @@ private:
         SERIALIZE_RESERVED = 255,
     };
 
-    // TODO: data members needed by the the new public functions and the
-    // protected functions for data access
+    // TODO: data members needed for file access. This is probably
+    // just a file descriptor and a pointer returned by mmap.
 
     file_backed_filter();
 
