@@ -763,17 +763,34 @@ protected:
         size_t length);
 
     /**
+        @brief Access a contiguous chunk of data without allowing
+            modification.
+
+        All the considerations of #access apply, and #commit should
+        still be called.
+    */
+    // TODO: implement
+    void const * access_const(
+        offset_type offset,
+        size_t length)
+        const;
+
+    /**
         @brief Save any changes made to memory returned by the most
             recent call to #access.
 
         If changes are made to memory returned by #access and this
         function is not called, the results are unspecified.
 
+        This should be called when done with a chunk of memory from
+        #access, even if no changes are made, as it may free
+        resources.
+
         @return On success, true. On failure, false is returned and
             #file_error_string will contain an error message.
     */
     // TODO: implement
-    bool commit();
+    bool commit() const;
 
 private:
     /**
