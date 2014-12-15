@@ -1,6 +1,8 @@
 #include <cmath>
+#include <iostream>
 
 #include <fasguardfilter.hpp>
+#include "bloomfilter.hpp"
 
 namespace fasguard
 {
@@ -196,10 +198,15 @@ static bloom_filter_parameters::index_type compute_hash(
 // If you make changes to this function, remember to avoid floating-
 // point rounding issues.
 bloom_filter_parameters::bloom_filter_parameters(
-    size_t items,
-    double probability_false_positive)
+                                                 size_t items,
+                                                 double
+                                                 probability_false_positive,
+                                                 int ip_protocol_num,
+                                                 int port_num
+                                                 )
 :
-    serializable_filter_parameters()
+  serializable_filter_parameters(),m_ip_protocol_num(ip_protocol_num),
+  m_port_num(port_num)
 {
     // Calculate optimal number of bits and round to the nearest
     // integer.
@@ -261,6 +268,26 @@ bloom_filter_statistics::bloom_filter_statistics()
 {
 }
 
+  bool bloom_filter_statistics::serialize(
+                                          void * buffer,
+                                          size_t & offset,
+                                          size_t length) const
+  {
+    std::cerr << "bloom_filter_statistics::serialize not implemented" <<
+      std::endl;
+    exit(1);
+  }
+
+bool bloom_filter_statistics::unserialize(
+                                          void const * buffer,
+                                          size_t & offset,
+                                          size_t length)
+  {
+    std::cerr << "bloom_filter_statistics::unserialize not implemented" <<
+      std::endl;
+    exit(1);
+  }
+
 
 bloom_filter::bloom_filter(
     bloom_filter_parameters * parameters_,
@@ -273,5 +300,73 @@ bloom_filter::bloom_filter(
 bloom_filter::~bloom_filter()
 {
 }
+
+  std::string bloom_filter_parameters::to_string() const
+  {
+    std::cerr << "bloom_filter_parameters::to_string not implemented" <<
+      std::endl;
+    exit(1);
+    return std::string("");
+  }
+
+  bool bloom_filter_parameters::serialize(
+                                          void * buffer,
+                                          size_t & offset,
+                                          size_t length)
+    const
+  {
+       std::cerr << "bloom_filter_parameters::serialize not implemented" <<
+         std::endl;
+       exit(1);
+       return false;
+  }
+
+  bool bloom_filter_parameters::unserialize(
+                   void const * buffer,
+                   size_t & offset,
+                   size_t length)
+  {
+        std::cerr << "bloom_filter_parameters::unserialize not implemented" <<
+         std::endl;
+       exit(1);
+       return false;
+ }
+
+
+  std::string bloom_filter::to_string() const
+  {
+    std::cerr << "bloom_filter::to_string not implemented" <<
+      std::endl;
+    exit(1);
+    return std::string("");
+  }
+
+  void bloom_filter::insert(
+                            uint8_t const * data,
+                            size_t length)
+  {
+    std::cerr << "bloom_filter::to_string not implemented" <<
+      std::endl;
+    exit(1);
+  }
+
+  bool bloom_filter::insert_all(
+                                filter const & other)
+  {
+    std::cerr << "bloom_filter::insert_all not implemented" <<
+      std::endl;
+    exit(1);
+    return false;
+  }
+
+  bool bloom_filter::contains(
+                          uint8_t const * data,
+                          size_t length) const
+  {
+    std::cerr << "bloom_filter::contains not implemented" <<
+      std::endl;
+    exit(1);
+    return false;
+  }
 
 }

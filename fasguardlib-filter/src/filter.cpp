@@ -126,7 +126,8 @@ public:
         return true;
     }
 
-    placeholder_filter_header_type();
+    placeholder_filter_header_type()
+  {}
 
 private:
     placeholder_filter_header_type(
