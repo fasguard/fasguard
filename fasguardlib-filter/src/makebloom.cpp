@@ -41,6 +41,10 @@ main(int argc, char *argv[])
   int num_insertions;
   int ip_proto;
   int port_num;
+  int min_depth;
+  int max_depth;
+  std::string out_file;
+
   po::variables_map vm;
 
   try
@@ -59,8 +63,16 @@ main(int argc, char *argv[])
         ("port-num",
          po::value<int>(&port_num)->default_value(80),
          "TCP/UDP port number")
+        ("min-depth",
+         po::value<int>(&min_depth)->default_value(4),
+         "Minimum ngram size")
+        ("max-depth",
+         po::value<int>(&max_depth)->default_value(4),
+         "Minimum ngram size")
         ("verbose,v", po::value<int>()->implicit_value(1),
          "enable verbosity (optionally specify level)")
+        ("out-file,o",po::value<std::string>(&out_file)->
+         default_value("out.bloom"),"Output file name")
         ("pcap-file", po::value< vector<string> >(), "pcap file")
         ;
 
@@ -141,8 +153,13 @@ main(int argc, char *argv[])
   //delete bfp_ptr;
   //delete bfs_ptr;
 
-  fasguard::PcapFileEngine pfe(vm["pcap-file"].as< vector<string> >(),
-                           bf);
+  bf.initialize(out_file);
 
+  fasguard::PcapFileEngine pfe(vm["pcap-file"].as< vector<string> >(),
+                           bf,min_depth,max_depth);
+
+  BOOST_LOG_TRIVIAL(debug)  << "Before makebloom flush " <<
+    std::endl;
+  bf.flush();
   return 0;
 }

@@ -4,7 +4,9 @@
 #include <inttypes.h>
 #include <limits>
 #include <string>
+#include <vector>
 #include "fasguardfilter.hpp"
+#include <boost/log/trivial.hpp>
 
 namespace fasguard
 {
@@ -63,15 +65,19 @@ namespace fasguard
                              size_t & offset,
                              size_t length);
 
-    /**
-       @brief Number of bits in the bloom filter.
-    */
-    index_type bitlength;
+    num_hashes_type getNumHashes() const
+    {
+      return m_num_hashes;
+    }
 
-    /**
-       @brief Number of hashes used in the bloom filter.
-    */
-    num_hashes_type num_hashes;
+    index_type getBitLength() const
+    {
+      // BOOST_LOG_TRIVIAL(debug) << "bitlength in getBitLength: " <<
+      //        bitlength << std::endl;
+      return bitlength;
+    }
+
+    bool serialize(std::string &serialized_header);
 
   private:
     /**
@@ -85,6 +91,16 @@ namespace fasguard
       };
     int m_ip_protocol_num;
     int m_port_num;
+    /**
+       @brief Number of bits in the bloom filter.
+    */
+    index_type bitlength;
+
+    /**
+       @brief Number of hashes used in the bloom filter.
+    */
+    num_hashes_type m_num_hashes;
+
   };
 
   /**
@@ -150,8 +166,11 @@ namespace fasguard
     // TODO: implement. make sure to use statistics callbacks if statistics != NULL
     virtual bool contains(
                           uint8_t const * data,
-                          size_t length)
-      const;
+                          size_t length);
+
+    bool flush();
+
+    const int CHAR_SIZE_BITS = 8;
 
   protected:
     virtual void create_filter_statistics()
@@ -208,6 +227,7 @@ namespace fasguard
 
     bloom_filter & operator=(
                              bloom_filter const & other);
+    std::vector<uint8_t> mBloomFilter;
   };
 
 }

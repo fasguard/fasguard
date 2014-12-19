@@ -3,8 +3,11 @@
 #include <vector>
 #include <string>
 #include <pcap.h>
+#include <net/ethernet.h>
+#include <netinet/in.h>
 
 #include "bloomfilter.hpp"
+#include "BloomPacketEngine.hpp"
 
 namespace fasguard
 {
@@ -25,11 +28,21 @@ namespace fasguard
      *          packets are placed.
      */
     PcapFileEngine(const std::vector<std::string> pcap_filenames,
-                   bloom_filter &b_filter);
+                   bloom_filter &b_filter,int min_depth,
+                   int max_depth);
+    static const int BytesProcessedDelta = 100000;
   protected:
     void fillBloom(std::string pcap_filename);
+    bool processFile(const std::string& filename);
+    bool initPcap(pcap_t*& p,const std::string&  dump);
+    std::string getDataLinkInfo(pcap_t* p);
+    int getNextPacket(pcap_t* p, const u_char*& payload, size_t& payload_len);
+    void closePcap(pcap_t*& p);
+    bool extractPayload(const u_char*  pkt, size_t   caplen,
+                        const u_char*& payload, size_t&  payload_len);
     bloom_filter &m_b_filter;
-
+    BloomPacketEngine m_b_pkt_eng;
+    unsigned long long int bytes_processed;
   };
 }
 

@@ -53,9 +53,7 @@ public:
             #serialize_error_string contains an error message.
     */
     virtual bool serialize(
-        void * buffer,
-        size_t & offset,
-        size_t length)
+                           std::string &serialized_header)
         const;
 
     /**
@@ -317,10 +315,7 @@ class serializable_filter_parameters
 public:
     virtual ~serializable_filter_parameters();
 
-    virtual bool serialize(
-        void * buffer,
-        size_t & offset,
-        size_t length)
+  virtual bool serialize(std::string &serialized_filter_parameters)
         const;
 
     virtual bool unserialize(
@@ -558,7 +553,6 @@ public:
     virtual bool contains(
         uint8_t const * data,
         size_t length)
-        const
         = 0;
 
     /**
@@ -568,21 +562,11 @@ public:
     */
     virtual ~filter();
 
-    /**
-        @brief Parameters for this filter.
-    */
-    filter_parameters * parameters;
 
-    /**
-        @brief Statistics for this filter.
-
-        This may be NULL.
-
-        The statistics may be updated even when <tt>this</tt> is
-        const.
-    */
-    filter_statistics * statistics;
-
+  filter_parameters *getFilterParameters()
+  {
+    return parameters;
+  }
 protected:
     /**
         @brief Constructor.
@@ -597,6 +581,20 @@ protected:
     filter(
         filter_parameters * parameters_,
         filter_statistics * statistics_);
+    /**
+        @brief Parameters for this filter.
+    */
+    filter_parameters * parameters;
+
+    /**
+        @brief Statistics for this filter.
+
+        This may be NULL.
+
+        The statistics may be updated even when <tt>this</tt> is
+        const.
+    */
+    filter_statistics * statistics;
 
 private:
     filter();
@@ -648,7 +646,7 @@ public:
     */
     // TODO: implement
     bool initialize(
-        char const * filename);
+                    const std::string &filename);
 
     /**
         @brief Flush any changes to the backing file.
@@ -658,7 +656,7 @@ public:
             state of this object is unspecified.
     */
     // TODO: implement
-    bool flush();
+    virtual bool flush();
 
     /**
         @brief Close the backing file.
@@ -795,7 +793,8 @@ protected:
     */
     // TODO: implement
     bool commit() const;
-
+protected:
+  std::string m_persistant_file;
 private:
     /**
         @brief Serialize the filter header only, not the data.
@@ -834,6 +833,7 @@ private:
 
     file_backed_filter & operator=(
         file_backed_filter const & other);
+
 };
 
 }

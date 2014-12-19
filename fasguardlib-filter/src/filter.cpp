@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <inttypes.h>
 
 #include <fasguardfilter.hpp>
@@ -11,15 +12,14 @@
 namespace fasguard
 {
 
-bool serializable_filter_header::serialize(
-    void * buffer,
-    size_t & offset,
-    size_t length)
-    const
+bool serializable_filter_header::serialize(std::string &serialized_header)
+  const
 {
-    (void)buffer;
-    (void)offset;
-    (void)length;
+  std::cerr <<
+    "Virtual serializable_filter_header::serialize. Shouldn't be here"
+            << std::endl;
+
+  exit(1);
     return true;
 }
 
@@ -155,25 +155,19 @@ serializable_filter_parameters::~serializable_filter_parameters()
 {
 }
 
-bool serializable_filter_parameters::serialize(
-    void * buffer,
-    size_t & offset,
-    size_t length)
+bool serializable_filter_parameters::serialize(std::string &
+                                               serialized_filter_parameters
+                                               )
     const
 {
     static char const hdr[] = "serializable_filter_parameters";
     static uint8_t const ver = SERIALIZE_V0;
 
     return (
-        // version
-        serialize_datum(
-            hdr, ver, "version",
-            buffer, offset, length,
-            ver) &&
 
         // parent classes
         serializable_filter_header::serialize(
-            buffer, offset, length) &&
+            serialized_filter_parameters) &&
 
         true);
 }
@@ -324,6 +318,7 @@ bool serializable_filter_statistics::serialize(
     static uint8_t const ver = SERIALIZE_V0;
 
     return (
+            /*
         // version
         serialize_datum(
             hdr, ver, "version",
@@ -345,7 +340,7 @@ bool serializable_filter_statistics::serialize(
             ((unique_insertions > UINT64_MAX)
                 ? UINT64_MAX
                 : unique_insertions)) &&
-
+            */
         true);
 }
 
@@ -454,9 +449,10 @@ bool file_backed_filter::serialize(
             ver) &&
 
         // parent classes
+        /*
         serializable_filter_header::serialize(
             buffer, offset, length) &&
-
+        */
         true))
     {
         return false;
@@ -465,6 +461,7 @@ bool file_backed_filter::serialize(
     // parameters
     serializable_filter_parameters const * const params =
         static_cast<serializable_filter_parameters const *>(parameters);
+    /*
     if (!params->serialize(buffer, offset, length))
     {
         strncpy(
@@ -473,7 +470,7 @@ bool file_backed_filter::serialize(
             sizeof(serialize_error_string));
         return false;
     }
-
+    */
     // statistics
     if (!serialize_datum<uint8_t>(
         hdr, ver, "statistics_is_present",
@@ -498,6 +495,7 @@ bool file_backed_filter::serialize(
 
     // extra header
     serializable_filter_header const * const extra = extra_header();
+    /*
     if (!extra->serialize(buffer, offset, length))
     {
         strncpy(
@@ -506,8 +504,21 @@ bool file_backed_filter::serialize(
             sizeof(serialize_error_string));
         return false;
     }
-
+    */
     return true;
+}
+
+bool
+file_backed_filter::initialize(const std::string &filename)
+{
+  m_persistant_file = filename;
+}
+
+bool
+file_backed_filter::flush()
+{
+  std::cerr << "file_backed_filter::flush not implemented" << std::endl;
+  exit(1);
 }
 
 bool file_backed_filter::unserialize(
