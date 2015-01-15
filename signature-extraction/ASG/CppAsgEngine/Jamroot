@@ -29,7 +29,7 @@ project
 
 # Declare the three extension modules.  You can specify multiple
 # source files after the colon separated by spaces.
-python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp ../DetectorReports/DetectorReport.cpp /usr/local/lib/libboost_log.so.1.57.0 ;
+python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp ../DetectorReports/DetectorReport.cpp /usr/local/lib/libboost_log.so.1.57.0 /usr/lib/libcrypto++.so.9.0.0 ;
 
 # Put the extension and Boost.Python DLL in the current directory, so
 # that running script by hand works.
@@ -48,4 +48,4 @@ local rule run-test ( test-name : sources + )
 }
 
 # Declare test targets
-run-test asg_engine : asg_engine_ext ../ASG.py  ;
+run-test asg_engine : asg_engine_ext ../testASG.py ;

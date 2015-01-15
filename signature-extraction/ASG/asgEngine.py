@@ -56,6 +56,9 @@ class PyAsgEngine:
         Method to transfer data from Python DectectorEvent to a
         DetectorReport in the C++ code.
         """
+        self.cppAsgEngine.setDetectorEventFlags(
+            self.detectorEvent.multiAttackFlag,
+            self.detectorEvent.attackBoundaryFlag)
         for attack in self.detectorEvent.attackInstanceList:
             self.cppAsgEngine.appendAttack()
             for attack_packet in attack.packetList:
@@ -65,6 +68,24 @@ class PyAsgEngine:
                                                attack_packet.Dport,
                                                attack_packet.payload,
                                                attack_packet.probAttack)
+    def makeCandidateSignatureStringSet(self):
+        """
+        Method to create a set of candidate signature strings which are then
+        filtered using benign traffic. The method used for creating the
+        candidate signatures depends on multi-attack metadata. The three
+        possible methods are:
+        1) If the multiAttackFlag is false, we produce tries that store all
+           n-grams within the range of lengths and all are signature candidates.
+        2) If the multiAttackFlag is true but the attackBoundaryFlag is false,
+           we use a general local-alignment based clustering to find similar
+           large strings within clustered packets assumed to be corresponding
+           packets across attacks.
+        3) If the multiAttackFlag is true and the attackBoundaryFlag is true,
+           we create clusters such that each cluster is constrained to contain
+           at most one packet from each attack instance.
+        """
+        logger = logging.getLogger('simple_example')
+        self.cppAsgEngine.makeCandidateSignatureStringSet()
     def makeTries(self):
         """
         Takes each packet in each attack and converts it to a Trie.

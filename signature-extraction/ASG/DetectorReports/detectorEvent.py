@@ -86,6 +86,8 @@ class DetectorEvent:
         """
         self.logger = logging.getLogger('simple_example')
         self.attackInstanceList = []
+        self.multiAttackFlag = False
+        self.attackBoundaryFlag = False
         if input_file:
             if re.match(r'.*\.fst', input_file):
                 self.logger.debug('FST file: %s', input_file)
@@ -101,7 +103,10 @@ class DetectorEvent:
         """
         This method parses a file in the BBN FST format which encodes an event.
         The format is in the form:
-        ____
+
+        MULTIPLE_ATTACKS = TRUE
+        ATTACK_BOUNDARIES = TRUE
+       ____
         ATTACK_INSTANCE_NUM = 1
         PCAP_FILE_NAME = attack_instance_1.pcap
         ****
@@ -143,7 +148,33 @@ class DetectorEvent:
         f = open(fst_file, 'r')
         for line in f:
             self.logger.debug('Line: %s', line)
-            if re.search(r'____', line):
+            if re.search(r'MULTIPLE_ATTACKS\s*=\s*(TRUE|true|FALSE|false)',
+                         line):
+                m = re.search(
+                    r'MULTIPLE_ATTACKS\s*=\s*(TRUE|true|FALSE|false)', line)
+                ma_val = m.group(1)
+                if ma_val == 'TRUE' or ma_val == 'true':
+                    self.multiAttackFlag = True
+                elif ma_val == 'FALSE' or ma_val == 'false':
+                    self.multiAttackFlag = False
+                else:
+                    self.logger.error('Bad MULTIPLE_ATTACKS value: %s',
+                                      ma_val)
+                    sys.exit(-1)
+            elif re.search(r'ATTACK_BOUNDARIES\s*=\s*(TRUE|true|FALSE|false)',
+                           line):
+                m = re.search(
+                    r'ATTACK_BOUNDARIES\s*=\s*(TRUE|true|FALSE|false)', line)
+                ma_val = m.group(1)
+                if ma_val == 'TRUE' or ma_val == 'true':
+                    self.attackBoundaryFlag = True
+                elif ma_val == 'FALSE' or ma_val == 'false':
+                    self.attackBoundaryFlag = False
+                else:
+                    self.logger.error('Bad ATTACK_BOUNDARIES value: %s',
+                                      ma_val)
+                    sys.exit(-1)
+            elif re.search(r'____', line):
                 if instance_num == -1:
                     self.logger.debug('First instance of ____')
                 else:
@@ -213,22 +244,22 @@ class DetectorEvent:
                                    'observables': [{}],
                                    'update_version': 0}
         stixDict['stix_header'] =  {'description': 'DESCRIPTION',
-                                    'handling':
-                                    [{'controlled_structure':
-                                      '//node()',
-                                      'marking_structures':
-                                      [{'color': 'WHITE',
-                                        'xsi:type':
-                                        'tlpMarking:TLPMarkingStructureType'}]},
-                                     {'controlled_structure':
-                                      '//node()',
-                                      'marking_structures':
-                                      [{'xsi:type':
-                                        'simpleMarking:SimpleMarkingStructureType'}]},
-                                     {'controlled_structure': '//node()',
-                                      'marking_structures':
-                                      [{'xsi:type':
-                                        'TOUMarking:TermsOfUseMarkingStructureType'}]}],
+                                    # 'handling':
+                                    # [{'controlled_structure':
+                                    #   '//node()',
+                                    #   'marking_structures':
+                                    #   [{'color': 'WHITE',
+                                    #     'xsi:type':
+                                    #     'tlpMarking:TLPMarkingStructureType'}]},
+                                    #  {'controlled_structure':
+                                    #   '//node()',
+                                    #   'marking_structures':
+                                    #   [{'xsi:type':
+                                    #     'simpleMarking:SimpleMarkingStructureType'}]},
+                                    #  {'controlled_structure': '//node()',
+                                    #   'marking_structures':
+                                    #   [{'xsi:type':
+                                    #     'TOUMarking:TermsOfUseMarkingStructureType'}]}],
                                     'information_source': {'identity': {},
                                                            'time':
                                                            {'produced_time':
@@ -239,12 +270,24 @@ class DetectorEvent:
                                                          'stixVocabs:PackageIntentVocab-1.0'}],
                                     'title': 'TITLE'}
         stixDict['threat_actors'] = [{}]
-        stixDict['ttps'] = {'kill_chains':
-                            {'kill_chains': [{'kill_chain_phases': [{}]}]},
-                            'ttps': [{}]}
+        # stixDict['ttps'] = {'kill_chains':
+        #                     {'kill_chains': [{'kill_chain_phases': [{}]}]},
+        #                     'ttps': [{}]}
         stixDict['version'] = '1.1.1'
+        if (((not self.multiAttackFlag) or (not self.attackBoundaryFlag))
+            and
+            len(self.attackInstanceList) != 1):
+            self.logger.error('For non-multiple attack or non-boundary attack '+
+                              'had more than one attack instance')
+            sys.exit(-1)
+        description_string = '\n\t\t\t\tMultipleAttack = '
+        description_string += 'TRUE' if self.multiAttackFlag else 'FALSE'
+        description_string += '\n\t\t\t\tAttackBoundaries = '
+        description_string += 'TRUE' if self.attackBoundaryFlag else 'FALSE'
+        description_string += '\n\t\t\t'
         for attack_instance in self.attackInstanceList:
-            related_observables_hash = {'related_observables':
+            related_observables_hash = {'description' : description_string,
+                                        'related_observables':
                                         {'observables': [],
                                          'scope':'exclusive'}}
             observables_list = (related_observables_hash['related_observables']
@@ -316,6 +359,8 @@ class DetectorEvent:
         self.logger.debug('After constructor')
         stix_xml = stix_package.to_xml()
         return stix_xml
+
+
     def parseXML(self, xml_file):
         """
         This method takes a STIX/CybOX XML file and stores the content as a
@@ -339,6 +384,31 @@ class DetectorEvent:
         self.logger.debug('Number of Attacks: %d',len(related_observables_list))
 
         for r_obs in related_observables_list:
+            description_string = r_obs['description']
+            m = re.search(
+                r'MultipleAttack\s*=\s*(TRUE|true|FALSE|false)',
+                description_string)
+            ma_val = m.group(1)
+            if ma_val == 'TRUE' or ma_val == 'true':
+                self.multiAttackFlag = True
+            elif ma_val == 'FALSE' or ma_val == 'false':
+                self.multiAttackFlag = False
+            else:
+                self.logger.error('Bad MultipleAttack value: %s',
+                                  ma_val)
+            m = re.search(
+                r'AttackBoundaries\s*=\s*(TRUE|true|FALSE|false)',
+                description_string)
+            ma_val = m.group(1)
+            if ma_val == 'TRUE' or ma_val == 'true':
+                self.attackBoundaryFlag = True
+            elif ma_val == 'FALSE' or ma_val == 'false':
+                self.attackBoundaryFlag = False
+            else:
+                self.logger.error('Bad MultipleAttack value: %s',
+                                  ma_val)
+
+
             observable_list = r_obs['related_observables']['observables']
             packet_list = []
             for obs in observable_list:
