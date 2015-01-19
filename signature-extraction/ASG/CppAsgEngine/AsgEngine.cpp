@@ -6,9 +6,12 @@
 #include <boost/log/expressions.hpp>
 #include <iostream>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 #include "AsgEngine.h"
 #include "Dendrogram.hh"
 #include "RegexExtractorLCSS.hh"
+
 
 using namespace boost::python;
 
@@ -30,7 +33,17 @@ namespace logging = boost::log;
 AsgEngine::AsgEngine(dict properties, bool debug_flag) :
   m_properties(properties), m_debug(debug_flag)
 {
-  m_max_depth = extract<int>(properties["max_depth"]);
+  std::istringstream(extract<std::string>(properties["ASG.MaxDepth"]))
+    >> m_max_depth;
+  std::istringstream(extract<std::string>(properties["ASG.MinDepth"]))
+    >> m_min_depth;
+  m_bloom_filter_dir = extract<std::string>(properties["ASG.BloomFilterDir"]);
+
+  BOOST_LOG_TRIVIAL(info) << "ASG.MaxDepth: " << m_max_depth << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "ASG.MinDepth: " << m_min_depth << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "ASG.BloomFilterDir: " << m_bloom_filter_dir <<
+    std::endl;
+
   if(debug_flag)
     {
       logging::core::get()->set_filter
@@ -151,6 +164,15 @@ AsgEngine::unsupervisedClustering()
     m_detector_report.getAttackStartIterator();
   int cnt = 0;
   // We expect only one group of packets containing multiple attacks
+
+  // Currently, we require that all packets in the attack have the same
+  // destination port
+
+  int num_pkts = 0;
+
+  std::map<int,int> proto_cnt;
+  std::map<int,int> dport_cnt;
+
   while(cit != m_detector_report.getAttackEndIterator())
     {
       BOOST_LOG_TRIVIAL(debug)   << "Attack #" << cnt << std::endl;
@@ -165,6 +187,10 @@ AsgEngine::unsupervisedClustering()
 
           std::string pkt_payload((**pit).getPayload().data(),
                                   (**pit).getPayload().size());
+
+          proto_cnt[(**pit).getProtocol()]++;
+          dport_cnt[(**pit).getDstPort()]++;
+
           pkt_content_list.push_back(pkt_payload);
           pit++;
           pkt_cnt++;
@@ -172,6 +198,19 @@ AsgEngine::unsupervisedClustering()
       cnt++;
       cit++;
     }
+
+  // Check that we're only getting data from one protocol and one service
+  if((proto_cnt.size() != 1) || (dport_cnt.size() != 1))
+    {
+      BOOST_LOG_TRIVIAL(error)   << "Need single protocol and port" <<
+        std::endl;
+      exit(-1);
+     }
+  int attack_proto = proto_cnt.begin()->first;
+  int attack_port = dport_cnt.begin()->first;
+
+  // Generate Bloom filter name
+
   Dendrogram dg(m_properties,pkt_content_list);
   dg.makeDistMtrx();
   boost::shared_ptr<tree<TreeNode> > dgram = dg.makeDendrogram();
@@ -180,6 +219,21 @@ AsgEngine::unsupervisedClustering()
     dg.findDisjointStringSets();
   BOOST_LOG_TRIVIAL(debug)   << "Number of similar string sets " <<
     similar_string_sets.size() << std::endl;
+
+  // Construct Bloom filter name
+
+  std::ostringstream ost;
+
+  ost << m_bloom_filter_dir << "/proto_" << attack_proto << "_port_" <<
+    attack_port << "_min_" << m_min_depth << "_max_" << m_max_depth <<
+    ".bloom";
+
+  std::string bf_name = ost.str();
+
+  BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
+                           << bf_name << std::endl;
+
+  fasguard::bloom_filter bf(bf_name);
 
   int string_set_count = 0;
   for(std::vector<std::set<std::string> >::iterator sset_it =
@@ -204,8 +258,66 @@ AsgEngine::unsupervisedClustering()
       BOOST_LOG_TRIVIAL(debug)   << "Num regex pieces: "<<
         regex_pieces.size() << std::endl;
 
+      std::vector<std::string> filt_regex_pieces =
+        filtSigFrags(bf,regex_pieces);
+
+       BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
+        filt_regex_pieces.size() << std::endl;
+
+       std::vector<std::string>::iterator rp_it = filt_regex_pieces.begin();
+
+       while(rp_it != filt_regex_pieces.end())
+         {
+           stringstream ss;
+           for(int i=0;i<(*rp_it).size();i++)
+             {
+               ss << std::hex << std::setw(2) <<
+                 std::setfill('0') << (unsigned int)((*rp_it)[i]);
+             }
+           BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
+           rp_it++;
+         }
+
 
       string_set_count++;
     }
 
+}
+
+std::vector<std::string>
+AsgEngine::filtSigFrags(fasguard::bloom_filter &bf,
+                        std::vector<std::string> &frag_pieces)
+{
+  std::vector<std::string> result;
+
+  std::vector<std::string>::iterator it = frag_pieces.begin();
+
+  while(it != frag_pieces.end())
+    {
+      std::set<std::string> ngrams;
+      for(int depth=m_min_depth;depth<=m_max_depth;depth++)
+        {
+          for(int i=0;i<=(*it).size()-depth;i++)
+            {
+              ngrams.insert((*it).substr(i,depth));
+            }
+        }
+      std::set<std::string>::iterator nit = ngrams.begin();
+
+      bool novel_flag = false;
+      while(nit != ngrams.end())
+        {
+          if(!bf.contains((uint8_t *)((*nit).data()),(*nit).size()))
+            {
+              novel_flag = true;
+              break;
+            }
+        }
+      if(novel_flag)
+        {
+          result.push_back(*it);
+        }
+      it++;
+    }
+  return result;
 }

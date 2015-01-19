@@ -36,18 +36,21 @@ class PyAsgEngine:
     """
     Goes through processing steps to convert detector report XML to signatures.
     """
-    def __init__(self, xml_file, max_depth, debug):
+    def __init__(self, xml_file, properties, debug):
         """
         Constructor which provides STIX file from which signatures will be
         produced.
 
         Arguments:
         xml_file - STIX compliant XML file.
-        max_depth - Max depth of trie. Negative number means unlimited depth.
+        properties - An EnvProperties object which contains information coming
+                from a properties file.
         debug -Boolean, true if debug is on.
         """
         self.properties = {}
-        self.properties['max_depth'] = max_depth
+        for property_name in properties.propertyNames():
+            self.properties[property_name] = properties.getProperty(
+                property_name)
         self.cppAsgEngine = AsgEngine(self.properties, debug)
         self.detectorEvent = DetectorEvent(xml_file)
         self.debug = debug

@@ -15,15 +15,15 @@ class Packet
    * Constructor for an object that contains a packet with all its data and
    * metadata to the current attack.
    * @param time Time from epoch including fraction of seconds.
-   * @param service IP code for service.
+   * @param protocol IP code for protocol.
    * @param sport Source port for TCP or UDP.
    * @param dport Destination port for TCP or UDP.
    * @param payload Binary string containing packet payload.
    * @param prob_attack Detectors estimate of the probability that this packet
    *            is part of the attack.
    */
-  Packet(double time, int service, int sport, int dport, std::string payload,
-         float prob_attack) : time_(time),service_(service),sport_(sport),
+  Packet(double time, int protocol, int sport, int dport, std::string payload,
+         float prob_attack) : time_(time),protocol_(protocol),sport_(sport),
     dport_(dport),m_payload(payload),prob_attack_(prob_attack)
   {}
   /**
@@ -40,9 +40,21 @@ class Packet
   {
     return m_payload;
   }
+  int getProtocol() const
+  {
+    return protocol_;
+  }
+  int getSrcPort() const
+  {
+    return sport_;
+  }
+  int getDstPort() const
+  {
+    return dport_;
+  }
  private:
   double time_;
-  int service_;
+  int protocol_;
   int sport_;
   int dport_;
   std::string m_payload;
@@ -75,14 +87,14 @@ class DetectorReport
   /**
    * Appends a packet with all its data and metadata to the current attack.
    * @param time Time from epoch including fraction of seconds.
-   * @param service IP code for service.
+   * @param protocol IP code for protocol.
    * @param sport Source port for TCP or UDP.
    * @param dport Destination port for TCP or UDP.
    * @param payload Binary string containing packet payload.
    * @param prob_attack Detectors estimate of the probability that this packet
    *            is part of the attack.
    */
-  void appendPacket(double time, int service, int sport, int dport,
+  void appendPacket(double time, int protocol, int sport, int dport,
                     std::string payload, float prob_attack);
   /**
    * Accessor for start iterator for vector that contains Packets for a single

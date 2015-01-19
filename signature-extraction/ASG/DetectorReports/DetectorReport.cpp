@@ -28,13 +28,13 @@ DetectorReport::appendAttack()
 }
 
 void
-DetectorReport::appendPacket(double time, int service, int sport, int dport,
+DetectorReport::appendPacket(double time, int protocol, int sport, int dport,
                     std::string payload, float prob_attack)
 {
   std::cout << "TIME: " << time << std::endl;
   m_attacks.back().push_back(boost::shared_ptr<Packet>(new
                                                        Packet(time,
-                                                              service,
+                                                              protocol,
                                                               sport,dport,
                                                               payload,
                                                               prob_attack)));

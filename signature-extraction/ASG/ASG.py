@@ -36,7 +36,7 @@ def process_detection(filename,properties,debug):
     #                         attack_packet.Sport, attack_packet.Dport,
     #                         attack_packet.payload, attack_packet.probAttack)
     max_depth = int(properties.getProperty('ASG.MaxDepth'))
-    asg_e = AsgEngine.PyAsgEngine(filename,max_depth,debug)
+    asg_e = AsgEngine.PyAsgEngine(filename,properties,debug)
     asg_e.loadDetectorEvent()
     asg_e.makeCandidateSignatureStringSet()
     #asg_e.makeTries()

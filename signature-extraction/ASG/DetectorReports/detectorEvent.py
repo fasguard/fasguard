@@ -53,6 +53,7 @@ class AttackPacket:
 
         #self.logger.debug('TCP destination port: %d',tcp.dport)
         if ip.p == dpkt.ip.IP_PROTO_TCP:
+            self.ipProto = ip.p
             tcp = ip.data
             self.logger.debug('TCP destination port: %d',tcp.dport)
             self.Dport = tcp.dport

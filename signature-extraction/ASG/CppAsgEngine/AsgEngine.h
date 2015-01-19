@@ -8,6 +8,7 @@
 #include "Trie.h"
 #include "AbstractTrieNodeFactory.h"
 #include "MemoryTrieNodeFactory.h"
+#include "bloomfilter.hpp"
 
 /**
  * This class performs the actual work in extracting signatures from a detector
@@ -77,16 +78,28 @@ class AsgEngine
    *       at most one packet from each attack instance.
    */
   void makeCandidateSignatureStringSet();
+
  protected:
   /**
    * Where we are told that there are multiple attacks but we are not given
    * information about attack boundaries, we perform unsupervised clustering.
    */
   void unsupervisedClustering();
+  /**
+   * Filter list of signature fragments. Each fragment must have at least
+   * one that is not in the Bloom filter.
+   * @param bf Bloom filter.
+   * @param sig_frags vector of strings that will be part of the signature.
+   * @return Vector of strings that survive filtering.
+   */
+  std::vector<std::string>
+    filtSigFrags(fasguard::bloom_filter &bf, std::vector<std::string> &frag_pieces);
  private:
   DetectorReport m_detector_report;
   std::vector<std::vector<boost::shared_ptr<Trie> > > m_trie_attack_list;
   int m_max_depth;
+  int m_min_depth;
+  std::string m_bloom_filter_dir;
   boost::python::dict m_properties;
   bool m_debug;
   bool m_multiple_attack_flag;

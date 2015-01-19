@@ -351,9 +351,13 @@ Dendrogram::findDisjointStringSets()
   double lpt;
   if(m_properties.has_key("Dendrogram.LevelPercentThresh"))
     {
-      lpt =
-        boost::python::extract<double>(m_properties
-                                       ["Dendrogram.LevelPercentThresh"]);
+      std::
+        istringstream(
+                      boost::python::
+                      extract<std::string>(
+                                           m_properties
+                                           ["Dendrogram.LevelPercentThresh"]))
+        >> lpt;
      }
 
   std::vector<std::string> leaves = getDTreeLeaves();

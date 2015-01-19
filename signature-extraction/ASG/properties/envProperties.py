@@ -49,3 +49,9 @@ class EnvProperties:
             return expanded_val
         else:
             return None
+    def propertyNames(self):
+        """
+        Return an iterator over all the keys of the property
+        dictionary, i.e the names of the properties
+        """
+        return self.propObj.propertyNames()
