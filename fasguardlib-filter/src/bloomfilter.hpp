@@ -35,7 +35,12 @@ namespace fasguard
                             size_t items,
                             double probability_false_positive,
                             int ip_protocol_num,
-                            int port_num);
+                            int port_num,
+                            int min_ngram_size,
+                            int max_ngram_size);
+
+    bloom_filter_parameters(const std::map<std::string,std::string>
+                            &bf_properties);
 
     virtual ~bloom_filter_parameters();
 
@@ -100,7 +105,8 @@ namespace fasguard
        @brief Number of hashes used in the bloom filter.
     */
     num_hashes_type m_num_hashes;
-
+    int m_min_ngram_size;
+    int m_max_ngram_size;
   };
 
   /**
@@ -148,6 +154,8 @@ namespace fasguard
     bloom_filter(
                  bloom_filter_parameters  *parameters_,
                  bloom_filter_statistics  *statistics_);
+
+    bloom_filter(std::string filename);
 
     virtual ~bloom_filter();
 

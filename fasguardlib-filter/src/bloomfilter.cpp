@@ -6,6 +6,7 @@
 
 #include <fasguardfilter.hpp>
 #include <stdint.h>
+#include <boost/regex.hpp>
 #include "bloomfilter.hpp"
 #include "MurmurHash3.h"
 
@@ -16,6 +17,9 @@ namespace fasguard
     @brief Maximum number of hashes that any bloom filter can have.
 */
 #define MAX_HASHES 512
+
+  const static uint32_t HeaderLengthInBytes = 4096;
+  static char Filler[HeaderLengthInBytes];
 
 /**
     @brief Seeds for #MAX_HASHES different hash functions.
@@ -219,11 +223,14 @@ bloom_filter_parameters::bloom_filter_parameters(
                                                  double
                                                  probability_false_positive,
                                                  int ip_protocol_num,
-                                                 int port_num
+                                                 int port_num,
+                                                 int min_ngram_size,
+                                                 int max_ngram_size
                                                  )
 :
   serializable_filter_parameters(),m_ip_protocol_num(ip_protocol_num),
-  m_port_num(port_num)
+  m_port_num(port_num),m_min_ngram_size(min_ngram_size),
+  m_max_ngram_size(max_ngram_size)
 {
   BOOST_LOG_TRIVIAL(debug) << "Expected number of insertions: " <<
     items << std::endl;
@@ -235,6 +242,22 @@ bloom_filter_parameters::bloom_filter_parameters(
     bitlength = llround(
         (-1.0 * (double)items * log(probability_false_positive)) /
         (M_LN2 * M_LN2));
+
+    // Always round up to a power of 2
+
+    unsigned long int bitlength_guess = 1;
+    BOOST_LOG_TRIVIAL(debug) << "Start bitlength: " <<
+      bitlength << std::endl;
+    for(int i = 0;i < (sizeof(unsigned long int)*8);i++)
+      {
+        bitlength_guess = 1L << i;
+
+        if(bitlength_guess > bitlength)
+          {
+            bitlength = bitlength_guess;
+            break;
+          }
+      }
 
     if (bitlength % 8 != 0)
     {
@@ -268,6 +291,48 @@ bloom_filter_parameters::bloom_filter_parameters(
 
 }
 
+  bloom_filter_parameters::bloom_filter_parameters(const std::map<std::string,
+                                                   std::string>
+                                                   &bf_properties)
+  {
+    std::map<std::string,std::string>::const_iterator cit =
+      bf_properties.begin();
+
+    while(cit != bf_properties.end())
+      {
+        if(cit->first == std::string("IP_PROTOCOL_NUMBER"))
+          {
+            std::istringstream(cit->second) >> m_ip_protocol_num;
+          }
+        else if(cit->first == std::string("TCP_IP_PORT_NUM"))
+          {
+            std::istringstream(cit->second) >> m_port_num;
+          }
+        else if(cit->first == std::string("BITLENGTH"))
+          {
+            std::istringstream(cit->second) >> bitlength;
+          }
+        else if(cit->first == std::string("NUM_HASHES"))
+          {
+            std::istringstream(cit->second) >> m_num_hashes;
+          }
+        else if(cit->first == std::string("MIN_NGRAM_SIZE"))
+          {
+            std::istringstream(cit->second) >> m_min_ngram_size;
+          }
+        else if(cit->first == std::string("MAX_NGRAM_SIZE"))
+          {
+            std::istringstream(cit->second) >> m_max_ngram_size;
+          }
+        else
+          {
+            BOOST_LOG_TRIVIAL(error) << "Unknown property: " <<
+              cit->first << std::endl;
+          }
+        cit++;
+      }
+  }
+
 bloom_filter_parameters::~bloom_filter_parameters()
 {
 }
@@ -296,6 +361,8 @@ double bloom_filter_parameters::probability_false_positive(
     out << "TCP_IP_PORT_NUM = " << m_port_num << std::endl;
     out << "BITLENGTH = " << bitlength << std::endl;
     out << "NUM_HASHES = " << m_num_hashes << std::endl;
+    out << "MIN_NGRAM_SIZE = " << m_min_ngram_size << std::endl;
+    out << "MAX_NGRAM_SIZE = " << m_max_ngram_size << std::endl;
     serialized_header = out.str();
     return true;
   }
@@ -338,6 +405,51 @@ bloom_filter::bloom_filter(
   BOOST_LOG_TRIVIAL(debug) << "Bitlength in bloom_filter: " <<
     parameters_->getBitLength() << std::endl;
 }
+
+  bloom_filter::bloom_filter(std::string filename)
+  {
+    std::ifstream bf_stream(filename.c_str());
+
+    if(!bf_stream)
+      {
+        BOOST_LOG_TRIVIAL(error) << "Unable to open: " <<
+          filename << std::endl;
+        exit(-1);
+
+      }
+    bf_stream.read(Filler,HeaderLengthInBytes);
+
+    std::string bf_prop_string(Filler);
+
+    // Now, extract the bloom filter file header information
+
+    std::map<std::string,std::string> bf_properties;
+
+    boost::regex exp("(\\w+)\\s*=\\s*(\\w+)");
+    boost::match_results<std::string::const_iterator> what;
+    std::string::const_iterator start = bf_prop_string.begin();
+
+    BOOST_LOG_TRIVIAL(debug) << "List properties: "
+                             << std::endl;
+    while(boost::regex_search(start,bf_prop_string.cend(),what,exp))
+      {
+        bf_properties[what[1]] = what[2];
+        BOOST_LOG_TRIVIAL(debug) << what[1] << " = " << what[2]
+                                 << std::endl;
+        start = what[0].second;
+      }
+    bloom_filter_parameters *bloom_parameters =
+      new bloom_filter_parameters(bf_properties);
+    parameters = bloom_parameters;
+    statistics =
+      new bloom_filter_statistics();
+    std::streampos bloom_size = bloom_parameters->getBitLength()>>3;
+    mBloomFilter.resize(bloom_size);
+    bf_stream.read((char *)&mBloomFilter[0], bloom_size);
+    BOOST_LOG_TRIVIAL(debug) << "Finished constructing bloom_filter"
+                             << std::endl;
+
+  }
 
 bloom_filter::~bloom_filter()
 {
@@ -490,8 +602,6 @@ bloom_filter::~bloom_filter()
 
   }
 
-  const static uint32_t HeaderLengthInBytes = 4096;
-  static char Filler[HeaderLengthInBytes];
 
   bool
   bloom_filter::flush()

@@ -38,7 +38,7 @@ int
 main(int argc, char *argv[])
 {
   double pfa;
-  int num_insertions;
+  unsigned long int num_insertions;
   int ip_proto;
   int port_num;
   int min_depth;
@@ -55,7 +55,7 @@ main(int argc, char *argv[])
         ("prob-fa", po::value<double>(&pfa)->default_value(0.00001),
          "desired probability of false alarm")
         ("num-insertions,n",
-         po::value<int>(&num_insertions)->default_value(10),
+         po::value<unsigned long int>(&num_insertions)->default_value(10),
          "Maximum number of insertion strings")
         ("ip-proto",
          po::value<int>(&ip_proto)->default_value(6),
@@ -131,7 +131,7 @@ main(int argc, char *argv[])
         if(vm.count("num-insertions"))
           {
             BOOST_LOG_TRIVIAL(debug)  << "Planned number of insertions " <<
-              vm["num-insertions"].as<int>()
+              vm["num-insertions"].as<unsigned long int>()
                                       << "\n";
           }
     }
@@ -143,7 +143,8 @@ main(int argc, char *argv[])
 
   fasguard::bloom_filter_parameters
     *bfp_ptr = new fasguard::bloom_filter_parameters(num_insertions,pfa,
-                                                 ip_proto,port_num);
+                                                 ip_proto,port_num,min_depth,
+                                                 max_depth);
 
   fasguard::bloom_filter_statistics
     *bfs_ptr = new fasguard::bloom_filter_statistics();

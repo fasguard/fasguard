@@ -41,7 +41,7 @@ all: makebloom
 
 #makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
 makebloom: makebloom.o bloomfilter.o filter.o PcapFileEngine.o BloomPacketEngine.o MurmurHash3.o
-	$(CC) -o $@ $^ -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lpcap
+	$(CC) -o $@ $^ -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap
 
 
 # make executables

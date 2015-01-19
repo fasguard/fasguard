@@ -581,6 +581,9 @@ protected:
     filter(
         filter_parameters * parameters_,
         filter_statistics * statistics_);
+    filter()
+  {}
+
     /**
         @brief Parameters for this filter.
     */
@@ -597,7 +600,6 @@ protected:
     filter_statistics * statistics;
 
 private:
-    filter();
 
     filter(
         filter const & other);
@@ -795,6 +797,8 @@ protected:
     bool commit() const;
 protected:
   std::string m_persistant_file;
+  file_backed_filter()
+  {}
 private:
     /**
         @brief Serialize the filter header only, not the data.
@@ -826,7 +830,7 @@ private:
     // TODO: data members needed for file access. This is probably
     // just a file descriptor and a pointer returned by mmap.
 
-    file_backed_filter();
+
 
     file_backed_filter(
         file_backed_filter const & other);
