@@ -11,7 +11,7 @@
 #include "AsgEngine.h"
 #include "Dendrogram.hh"
 #include "RegexExtractorLCSS.hh"
-
+#include "SuricataRuleMaker.hpp"
 
 using namespace boost::python;
 
@@ -209,6 +209,32 @@ AsgEngine::unsupervisedClustering()
   int attack_proto = proto_cnt.begin()->first;
   int attack_port = dport_cnt.begin()->first;
 
+  std::string attack_proto_string;
+
+  switch(attack_proto)
+    {
+    case 1:
+      attack_proto_string = "icmp";
+      break;
+    case 2:
+      attack_proto_string = "igmp";
+      break;
+    case 6:
+      attack_proto_string = "tcp";
+      break;
+    case 17:
+      attack_proto_string = "udp";
+      break;
+    default:
+      BOOST_LOG_TRIVIAL(error)   << "Unknown attack protocol: " <<
+        attack_proto << std::endl;
+      exit(-1);
+    }
+
+  std::ostringstream ost;
+  ost << attack_port;
+  std::string attack_port_string = ost.str();
+
   // Generate Bloom filter name
 
   Dendrogram dg(m_properties,pkt_content_list);
@@ -222,7 +248,7 @@ AsgEngine::unsupervisedClustering()
 
   // Construct Bloom filter name
 
-  std::ostringstream ost;
+  ost.str("");
 
   ost << m_bloom_filter_dir << "/proto_" << attack_proto << "_port_" <<
     attack_port << "_min_" << m_min_depth << "_max_" << m_max_depth <<
@@ -234,6 +260,9 @@ AsgEngine::unsupervisedClustering()
                            << bf_name << std::endl;
 
   fasguard::bloom_filter bf(bf_name);
+
+  SuricataRuleMaker srm(attack_proto_string,"any","any","any",
+                        attack_port_string);
 
   int string_set_count = 0;
   for(std::vector<std::set<std::string> >::iterator sset_it =
@@ -273,8 +302,17 @@ AsgEngine::unsupervisedClustering()
              {
                ss << std::hex << std::setw(2) <<
                  std::setfill('0') << (unsigned int)((*rp_it)[i]);
+               if(i != (*rp_it).size()-1)
+                 {
+                   ss << " ";
+                 }
              }
            BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
+           std::string sig_hex = ss.str();
+
+           std::string snort_rule = srm.makeContentRule(sig_hex);
+           BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
+
            rp_it++;
          }
 
