@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <iterator>
 #include <pcap.h>
-#include "bloomfilter.hpp"
+#include "BloomFilter.hh"
 #include "PcapFileEngine.hpp"
 //#include "MurmurHash3.h"
 
@@ -141,26 +141,27 @@ main(int argc, char *argv[])
       return 1;
     }
 
-  fasguard::bloom_filter_parameters
-    *bfp_ptr = new fasguard::bloom_filter_parameters(num_insertions,pfa,
-                                                 ip_proto,port_num,min_depth,
-                                                 max_depth);
+  // fasguard::bloom_filter_parameters
+  //   *bfp_ptr = new fasguard::bloom_filter_parameters(num_insertions,pfa,
+  //                                             ip_proto,port_num,min_depth,
+  //                                             max_depth);
 
-  fasguard::bloom_filter_statistics
-    *bfs_ptr = new fasguard::bloom_filter_statistics();
+  // fasguard::bloom_filter_statistics
+  //   *bfs_ptr = new fasguard::bloom_filter_statistics();
 
-  fasguard::bloom_filter bf(bfp_ptr,bfs_ptr);
+  BloomFilter bf(num_insertions,pfa,ip_proto,port_num,min_depth,
+                 max_depth);
 
   //delete bfp_ptr;
   //delete bfs_ptr;
 
-  bf.initialize(out_file);
+  //bf.initialize(out_file);
 
   fasguard::PcapFileEngine pfe(vm["pcap-file"].as< vector<string> >(),
                            bf,min_depth,max_depth);
 
   BOOST_LOG_TRIVIAL(debug)  << "Before makebloom flush " <<
     std::endl;
-  bf.flush();
+  bf.flush(out_file);
   return 0;
 }

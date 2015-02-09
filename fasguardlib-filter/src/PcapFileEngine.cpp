@@ -6,7 +6,7 @@
 namespace fasguard
 {
   PcapFileEngine::PcapFileEngine(const std::vector<std::string> pcap_filenames,
-                                 bloom_filter &b_filter,int min_depth,
+                                 BloomFilter &b_filter,int min_depth,
                                  int max_depth) :
     m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth)
   {

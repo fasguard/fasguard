@@ -5,6 +5,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <map>
 #include "fasguardfilter.hpp"
 #include <boost/log/trivial.hpp>
 

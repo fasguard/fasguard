@@ -1,12 +1,12 @@
 #include <iostream>
 #include "BloomPacketEngine.hpp"
-#include "bloomfilter.hpp"
+#include "BloomFilter.hh"
 
 using namespace std;
 
 namespace fasguard
 {
-BloomPacketEngine::BloomPacketEngine(bloom_filter &b_filter,
+BloomPacketEngine::BloomPacketEngine(BloomFilter &b_filter,
                                      int min_hor,int max_hor,bool stat_flag) :
   m_bf(b_filter),m_min_hor(min_hor),
   m_max_hor(max_hor),m_stat_flag(stat_flag)
@@ -72,10 +72,6 @@ BloomPacketEngine::insertPacket(const unsigned char *str,int lgth)
 
   bool BloomPacketEngine::flush(const std::string &filename)
 {
-  if(!m_opened_backing_file)
-    {
-      m_bf.initialize(filename);
-    }
-  return m_bf.flush();
+  return m_bf.flush(filename);
 }
 }

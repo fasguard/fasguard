@@ -2,20 +2,20 @@
 #define BLOOM_PACKET_ENGINE_HH
 
 #include <string>
-#include "bloomfilter.hpp"
+#include "BloomFilter.hh"
 
 namespace fasguard
 {
   class BloomPacketEngine
   {
   public:
-    BloomPacketEngine(bloom_filter &b_filter,
+    BloomPacketEngine(BloomFilter &b_filter,
                       int min_hor,int max_hor,bool stat_flag=true);
     ~BloomPacketEngine();
     void insertPacket(const unsigned char *str,int lgth);
     bool flush(const std::string &filename);
   private:
-    bloom_filter &m_bf;
+    BloomFilter &m_bf;
     int m_min_hor;
     int m_max_hor;
     bool m_stat_flag;

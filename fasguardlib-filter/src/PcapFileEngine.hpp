@@ -6,7 +6,7 @@
 #include <net/ethernet.h>
 #include <netinet/in.h>
 
-#include "bloomfilter.hpp"
+#include "BloomFilter.hh"
 #include "BloomPacketEngine.hpp"
 
 namespace fasguard
@@ -28,7 +28,7 @@ namespace fasguard
      *          packets are placed.
      */
     PcapFileEngine(const std::vector<std::string> pcap_filenames,
-                   bloom_filter &b_filter,int min_depth,
+                   BloomFilter &b_filter,int min_depth,
                    int max_depth);
     static const int BytesProcessedDelta = 100000;
   protected:
@@ -40,7 +40,7 @@ namespace fasguard
     void closePcap(pcap_t*& p);
     bool extractPayload(const u_char*  pkt, size_t   caplen,
                         const u_char*& payload, size_t&  payload_len);
-    bloom_filter &m_b_filter;
+    BloomFilter &m_b_filter;
     BloomPacketEngine m_b_pkt_eng;
     unsigned long long int bytes_processed;
   };
