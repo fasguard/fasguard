@@ -150,7 +150,8 @@ AsgEngine::makeCandidateSignatureStringSet()
           // First, turn each packet into its own trie
           BOOST_LOG_TRIVIAL(debug)   <<
             "In single attack code" << std::endl;
-          makeTries();
+          //makeTries();
+          singleAttack();
     }
 }
 
@@ -159,7 +160,7 @@ AsgEngine::unsupervisedClustering()
 {
   std::vector<std::string> pkt_content_list;
   BOOST_LOG_TRIVIAL(debug) << "Entering unsupervisedClustering" << std::endl;
-  std::cout << "In makeTries" << std::endl;
+
   std::vector<std::vector<boost::shared_ptr<Packet> > >::const_iterator cit =
     m_detector_report.getAttackStartIterator();
   int cnt = 0;
@@ -259,7 +260,7 @@ AsgEngine::unsupervisedClustering()
   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
                            << bf_name << std::endl;
 
-  fasguard::bloom_filter bf(bf_name);
+  BloomFilter bf(bf_name);
 
   SuricataRuleMaker srm(attack_proto_string,"any","any","any",
                         attack_port_string);
@@ -323,18 +324,30 @@ AsgEngine::unsupervisedClustering()
 }
 
 std::vector<std::string>
-AsgEngine::filtSigFrags(fasguard::bloom_filter &bf,
+AsgEngine::filtSigFrags(BloomFilter &bf,
                         std::vector<std::string> &frag_pieces)
 {
   std::vector<std::string> result;
+
+  BOOST_LOG_TRIVIAL(debug)   << "In filtSigFrags, num frag_pieces: " <<
+    frag_pieces.size() << std::endl;
 
   std::vector<std::string>::iterator it = frag_pieces.begin();
 
   while(it != frag_pieces.end())
     {
       std::set<std::string> ngrams;
+
+      if((*it).size() < m_max_depth)
+        {
+          it++;
+          continue;
+        }
       for(int depth=m_min_depth;depth<=m_max_depth;depth++)
         {
+          BOOST_LOG_TRIVIAL(debug)   << "Size of frag_piece: " <<
+            (*it).size() << std::endl;
+
           for(int i=0;i<=(*it).size()-depth;i++)
             {
               ngrams.insert((*it).substr(i,depth));
@@ -350,6 +363,7 @@ AsgEngine::filtSigFrags(fasguard::bloom_filter &bf,
               novel_flag = true;
               break;
             }
+          nit++;
         }
       if(novel_flag)
         {
@@ -358,4 +372,185 @@ AsgEngine::filtSigFrags(fasguard::bloom_filter &bf,
       it++;
     }
   return result;
+}
+
+void
+AsgEngine::singleAttack()
+{
+  std::vector<std::string> pkt_content_list;
+
+  BOOST_LOG_TRIVIAL(debug) << "Entering singleAttack" << std::endl;
+
+  std::vector<std::vector<boost::shared_ptr<Packet> > >::const_iterator cit =
+    m_detector_report.getAttackStartIterator();
+
+  int cnt = 0;
+
+  // We expect only one group of packets containing a single attack
+
+  // Currently, we require that all packets in the attack have the same
+  // destination port
+
+  int num_pkts = 0;
+
+  std::map<int,int> proto_cnt;
+  std::map<int,int> dport_cnt;
+  while(cit != m_detector_report.getAttackEndIterator())
+    {
+      BOOST_LOG_TRIVIAL(debug)   << "Attack #" << cnt << std::endl;
+      std::vector<boost::shared_ptr<Packet> >::const_iterator pit =
+        (*cit).begin();
+      // Add attack to trie attack list
+      int pkt_cnt = 0;
+      while(pit != (*cit).end())
+        {
+          BOOST_LOG_TRIVIAL(debug)   << "Pkt Cnt: " << pkt_cnt << std::endl;
+
+
+          BOOST_LOG_TRIVIAL(debug) << "Destination Port: " <<
+            (**pit).getDstPort() << std::endl;
+          std::string pkt_payload((**pit).getPayload().data(),
+                                  (**pit).getPayload().size());
+
+          proto_cnt[(**pit).getProtocol()]++;
+          dport_cnt[(**pit).getDstPort()]++;
+
+          pkt_content_list.push_back(pkt_payload);
+          pit++;
+          pkt_cnt++;
+        }
+      cnt++;
+      cit++;
+    }
+
+  // Check that we're only getting data from one protocol and one service
+  if((proto_cnt.size() != 1) || (dport_cnt.size() != 1))
+    {
+      BOOST_LOG_TRIVIAL(error)   << "Need single protocol and port" <<
+        std::endl;
+      exit(-1);
+     }
+  int attack_proto = proto_cnt.begin()->first;
+  int attack_port = dport_cnt.begin()->first;
+
+  std::string attack_proto_string;
+
+  switch(attack_proto)
+    {
+    case 1:
+      attack_proto_string = "icmp";
+      break;
+    case 2:
+      attack_proto_string = "igmp";
+      break;
+    case 6:
+      attack_proto_string = "tcp";
+      break;
+    case 17:
+      attack_proto_string = "udp";
+      break;
+    default:
+      BOOST_LOG_TRIVIAL(error)   << "Unknown attack protocol: " <<
+        attack_proto << std::endl;
+      exit(-1);
+    }
+
+  std::ostringstream ost;
+  ost << attack_port;
+  std::string attack_port_string = ost.str();
+
+
+  // Construct Bloom filter name
+
+  ost.str("");
+
+  ost << m_bloom_filter_dir << "/proto_" << attack_proto << "_port_" <<
+    attack_port << "_min_" << m_min_depth << "_max_" << m_max_depth <<
+    ".bloom";
+
+  std::string bf_name = ost.str();
+
+  BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
+                           << bf_name << std::endl;
+
+  BloomFilter bf(bf_name);
+
+  SuricataRuleMaker srm(attack_proto_string,"any","any","any",
+                        attack_port_string);
+
+  int string_set_count = 0;
+
+  std::set<std::string> filt_regex_pieces =
+    filtNgrams(bf,pkt_content_list);
+
+  BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
+    filt_regex_pieces.size() << std::endl;
+
+
+  std::set<std::string>::iterator pc_it = filt_regex_pieces.begin();
+
+  while(pc_it != filt_regex_pieces.end())
+    {
+      stringstream ss;
+      for(int i=0;i<(*pc_it).size();i++)
+        {
+          ss << std::hex << std::setw(2) <<
+            std::setfill('0') << (unsigned int)((*pc_it)[i]);
+          if(i != (*pc_it).size()-1)
+            {
+              ss << " ";
+            }
+        }
+      BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
+      std::string sig_hex = ss.str();
+
+      std::string snort_rule = srm.makeContentRule(sig_hex);
+      BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
+
+      pc_it++;
+    }
+}
+
+std::set<std::string>
+AsgEngine::filtNgrams(BloomFilter &bf,
+                      std::vector<std::string> &pkts)
+{
+  std::set<std::string> ngrams;
+
+  BOOST_LOG_TRIVIAL(debug)   << "In filtNgrams, num pkt content: " <<
+    pkts.size() << std::endl;
+
+  std::vector<std::string>::iterator it = pkts.begin();
+
+  while(it != pkts.end())
+    {
+      if((*it).size() < m_max_depth)
+        {
+          it++;
+          continue;
+        }
+
+      // We take only the shortest string that doesn't get filtered
+
+      for(int i=0;i<=(*it).size()-m_min_depth;i++)
+        {
+          int local_max_depth = (i+m_max_depth < (*it).size())?
+            m_max_depth:((*it).size()-i);
+          for(int depth=m_min_depth;depth<=local_max_depth;depth++)
+            {
+              std::string ngram = (*it).substr(i,depth);
+
+              if(!bf.contains((uint8_t *)(ngram.data()),ngram.size()))
+                {
+                  ngrams.insert(ngram);
+                  break;
+                }
+            }
+        }
+
+      it++;
+    }
+
+
+  return ngrams;
 }

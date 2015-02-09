@@ -4,11 +4,12 @@
 #include <boost/python/def.hpp>
 #include <string>
 #include <vector>
+#include <set>
 #include "../DetectorReports/DetectorReport.h"
 #include "Trie.h"
 #include "AbstractTrieNodeFactory.h"
 #include "MemoryTrieNodeFactory.h"
-#include "bloomfilter.hpp"
+#include "BloomFilter.hh"
 
 /**
  * This class performs the actual work in extracting signatures from a detector
@@ -86,6 +87,11 @@ class AsgEngine
    */
   void unsupervisedClustering();
   /**
+   * Produce signatures from packets for a single attack. No clustering
+   * takes place.
+   */
+  void singleAttack();
+  /**
    * Filter list of signature fragments. Each fragment must have at least
    * one that is not in the Bloom filter.
    * @param bf Bloom filter.
@@ -93,7 +99,11 @@ class AsgEngine
    * @return Vector of strings that survive filtering.
    */
   std::vector<std::string>
-    filtSigFrags(fasguard::bloom_filter &bf, std::vector<std::string> &frag_pieces);
+    filtSigFrags(BloomFilter &bf, std::vector<std::string> &frag_pieces);
+  std::set<std::string>
+    filtNgrams(BloomFilter &bf,
+               std::vector<std::string> &pkts);
+
  private:
   DetectorReport m_detector_report;
   std::vector<std::vector<boost::shared_ptr<Trie> > > m_trie_attack_list;
