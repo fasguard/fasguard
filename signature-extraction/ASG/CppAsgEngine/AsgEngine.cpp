@@ -38,6 +38,23 @@ AsgEngine::AsgEngine(dict properties, bool debug_flag) :
   std::istringstream(extract<std::string>(properties["ASG.MinDepth"]))
     >> m_min_depth;
   m_bloom_filter_dir = extract<std::string>(properties["ASG.BloomFilterDir"]);
+  std::string blm_frm_mem =
+    extract<std::string>(properties["ASG.BloomFromMemory"]);
+
+  if(blm_frm_mem.compare(std::string("T")) == 0)
+    {
+      m_blm_frm_mem = true;
+    }
+  else if(blm_frm_mem.compare(std::string("F")) == 0)
+    {
+      m_blm_frm_mem = false;
+    }
+  else
+    {
+      BOOST_LOG_TRIVIAL(error) << "Bad ASG.BloomFromMemory value: " <<
+        blm_frm_mem << std::endl;
+      exit(-1);
+    }
 
   BOOST_LOG_TRIVIAL(info) << "ASG.MaxDepth: " << m_max_depth << std::endl;
   BOOST_LOG_TRIVIAL(info) << "ASG.MinDepth: " << m_min_depth << std::endl;
@@ -260,7 +277,7 @@ AsgEngine::unsupervisedClustering()
   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
                            << bf_name << std::endl;
 
-  BloomFilter bf(bf_name);
+  BloomFilter bf(bf_name,m_blm_frm_mem);
 
   SuricataRuleMaker srm(attack_proto_string,"any","any","any",
                         attack_port_string);
@@ -473,7 +490,7 @@ AsgEngine::singleAttack()
   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
                            << bf_name << std::endl;
 
-  BloomFilter bf(bf_name);
+  BloomFilter bf(bf_name,m_blm_frm_mem);
 
   SuricataRuleMaker srm(attack_proto_string,"any","any","any",
                         attack_port_string);

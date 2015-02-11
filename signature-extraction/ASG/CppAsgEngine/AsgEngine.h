@@ -110,6 +110,7 @@ class AsgEngine
   int m_max_depth;
   int m_min_depth;
   std::string m_bloom_filter_dir;
+  bool m_blm_frm_mem;
   boost::python::dict m_properties;
   bool m_debug;
   bool m_multiple_attack_flag;
