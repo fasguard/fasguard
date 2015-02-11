@@ -1,6 +1,7 @@
 #ifndef BLOOM_FILTER_HH
 #define BLOOM_FILTER_HH
 #include <vector>
+#include <fstream>
 #include "BenignNgramStorage.hh"
 
 /**
@@ -34,8 +35,10 @@ public:
   /**
    * Constructor for restoring Bloom filter from persistent store.
    * @param filename Name of file containing persistent Bloom filter.
+   * @param from_mem_p If true, Bloom filter data is loaded in memory. If
+   *    false, file is accesed for each Bloom filter bit using fseek.
    */
-  BloomFilter(std::string &filename);
+  BloomFilter(std::string &filename,bool from_mem_p);
   /**
    * Destructor.
    */
@@ -86,6 +89,10 @@ protected:
   num_hashes_type m_num_hashes;
 
   std::vector<uint8_t> mBloomFilter;
+
+  bool m_blm_frm_mem;
+
+  std::fstream m_bf_stream;
 
 };
 #endif

@@ -161,7 +161,8 @@ BloomFilter::BloomFilter(size_t inserted_items,
                          double probability_false_positive,
                          int ip_protocol_num, int port_num, int min_ngram_size,
                          int max_ngram_size) :
-  BenignNgramStorage(ip_protocol_num,port_num,min_ngram_size,max_ngram_size)
+  BenignNgramStorage(ip_protocol_num,port_num,min_ngram_size,max_ngram_size),
+  m_blm_frm_mem(true)
 {
   BOOST_LOG_TRIVIAL(debug) << "Expected number of insertions: " <<
     inserted_items << std::endl;
@@ -224,18 +225,18 @@ BloomFilter::BloomFilter(size_t inserted_items,
     mBloomFilter.resize((m_bitlength>>3),0);
 }
 
-BloomFilter::BloomFilter(std::string &filename)
+BloomFilter::BloomFilter(std::string &filename, bool from_mem_p) :
+  m_blm_frm_mem(from_mem_p),m_bf_stream(filename.c_str())
 {
-    std::ifstream bf_stream(filename.c_str());
 
-    if(!bf_stream)
+    if(!m_bf_stream)
       {
         BOOST_LOG_TRIVIAL(error) << "Unable to open: " <<
           filename << std::endl;
         exit(-1);
 
       }
-    bf_stream.read(Filler,HeaderLengthInBytes);
+    m_bf_stream.read(Filler,HeaderLengthInBytes);
 
     std::string bf_prop_string(Filler);
 
@@ -285,8 +286,12 @@ BloomFilter::BloomFilter(std::string &filename)
       }
 
     std::streampos bloom_size = m_bitlength>>3;
-    mBloomFilter.resize(bloom_size,0);
-    bf_stream.read((char *)&mBloomFilter[0], bloom_size);
+
+    if(m_blm_frm_mem)
+      {
+        mBloomFilter.resize(bloom_size,0);
+        m_bf_stream.read((char *)&mBloomFilter[0], bloom_size);
+      }
     BOOST_LOG_TRIVIAL(debug) << "Finished constructing BloomFilter"
                              << std::endl;
 }
@@ -294,7 +299,12 @@ BloomFilter::BloomFilter(std::string &filename)
    * Destructor.
    */
 BloomFilter::~BloomFilter()
-{}
+{
+  if(!m_blm_frm_mem)
+    {
+      m_bf_stream.close();
+    }
+}
 /**
  * Insert ngrams extracted from a string into the storage data structure.
  * @param data The content from the packet.
@@ -322,7 +332,20 @@ BloomFilter::insert(uint8_t const * data, size_t length)
 
       // mark the appropriate bit in the Bloom filter to indicate that this
       // Ngram has been seen
-      mBloomFilter[bit_index / CHAR_SIZE_BITS] |= BIT_MASK[bit_index % CHAR_SIZE_BITS];
+      if(m_blm_frm_mem)
+        {
+          mBloomFilter[bit_index / CHAR_SIZE_BITS] |=
+            BIT_MASK[bit_index % CHAR_SIZE_BITS];
+        }
+      else
+        {
+          m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+          unsigned char val;
+          m_bf_stream.read((char *)&val,1);
+          val |= BIT_MASK[bit_index % CHAR_SIZE_BITS];
+          m_bf_stream.seekp(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+          m_bf_stream.write((char *)&val,1);
+        }
 
       //cout << "Hash: " << i << ",bit_index = " << bit_index << endl;
     }
@@ -368,10 +391,24 @@ BloomFilter::contains(uint8_t const * data, size_t length)
 
       // if the given bit index in the Bloom filter hasn't been marked, we
       // definitely have never seen this Ngram before
-      if((mBloomFilter[bit_index / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
-         BIT_MASK[bit])
+      if(m_blm_frm_mem)
         {
-          return(false);
+          if((mBloomFilter[bit_index / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
+             BIT_MASK[bit])
+            {
+              return(false);
+            }
+        }
+      else
+        {
+          m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+          unsigned char val;
+          m_bf_stream.read((char *)&val,1);
+          if((val &  BIT_MASK[bit]) != BIT_MASK[bit])
+            {
+              return false;
+            }
+
         }
     }
 

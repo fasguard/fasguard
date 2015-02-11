@@ -179,7 +179,7 @@ namespace fasguard
 
     bool flush();
 
-    const int CHAR_SIZE_BITS = 8;
+    static const int CHAR_SIZE_BITS = 8;
 
   protected:
     virtual void create_filter_statistics()
