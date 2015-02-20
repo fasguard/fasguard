@@ -30,7 +30,7 @@ namespace fasguard
     PcapFileEngine(const std::vector<std::string> pcap_filenames,
                    BloomFilter &b_filter,int min_depth,
                    int max_depth);
-    static const int BytesProcessedDelta = 100000;
+    static const int BytesProcessedDelta = 1000000;
   protected:
     void fillBloom(std::string pcap_filename);
     bool processFile(const std::string& filename);

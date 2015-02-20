@@ -68,10 +68,28 @@ BloomPacketEngine::insertPacket(const unsigned char *str,int lgth)
       cout << dec << num_new_insertions << " new insertions out of "
            << num_insertions << endl;
     }
+  unsigned int e_above = m_bf.entryAbove(1);
+  if(e_above > 1)
+    {
+      //cout << "Entry above 1 is " << e_above << endl;
+    }
+  else
+    {
+      cout << "FAILED ENTRY ABOVE TEST" << endl;
+    }
 }
 
   bool BloomPacketEngine::flush(const std::string &filename)
 {
+  unsigned int e_above = m_bf.entryAbove(1);
+  if(e_above > 1)
+    {
+      cout << "Entry above 1 is " << e_above << endl;
+    }
+  else
+    {
+      cout << "FAILED ENTRY ABOVE TEST" << endl;
+    }
   return m_bf.flush(filename);
 }
 }

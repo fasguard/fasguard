@@ -63,6 +63,8 @@ public:
    * @param filename Name of file used for persistence.
    */
   virtual bool flush(std::string filename);
+
+  unsigned int entryAbove(unsigned int val);
   static const unsigned int MAX_HASHES = 512;
   static const unsigned int CHAR_SIZE_BITS = 8;
   static const uint32_t HeaderLengthInBytes = 4096;
