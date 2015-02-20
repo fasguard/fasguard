@@ -30,6 +30,14 @@ BOOST_PYTHON_MODULE(asg_engine_ext)
 
 namespace logging = boost::log;
 
+Ngram:: Ngram(std::string content, unsigned int pkt_offset,
+              unsigned int pkt_num):
+  m_content(content), m_pkt_offset(pkt_offset), m_pkt_num(pkt_num)
+{}
+
+Ngram::~Ngram()
+{}
+
 AsgEngine::AsgEngine(dict properties, bool debug_flag) :
   m_properties(properties), m_debug(debug_flag)
 {
@@ -497,23 +505,39 @@ AsgEngine::singleAttack()
 
   int string_set_count = 0;
 
-  std::set<std::string> filt_regex_pieces =
+  std::vector<Ngram> filt_regex_pieces =
     filtNgrams(bf,pkt_content_list);
 
   BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
     filt_regex_pieces.size() << std::endl;
 
 
-  std::set<std::string>::iterator pc_it = filt_regex_pieces.begin();
+  std::vector<Ngram>::iterator pc_it = filt_regex_pieces.begin();
+  std::set<std::string> seen_already;
 
   while(pc_it != filt_regex_pieces.end())
     {
       stringstream ss;
-      for(int i=0;i<(*pc_it).size();i++)
+      std::string cur_string = (*pc_it).getContent();
+      if(seen_already.find(cur_string) != seen_already.end())
+        {
+          pc_it++;
+          continue;
+        }
+      else if (cur_string.size() < m_min_depth)
+        {
+          pc_it++;
+          continue;
+        }
+      else
+        {
+          seen_already.insert(cur_string);
+        }
+      for(int i=0;i<cur_string.size();i++)
         {
           ss << std::hex << std::setw(2) <<
-            std::setfill('0') << (unsigned int)((*pc_it)[i]);
-          if(i != (*pc_it).size()-1)
+            std::setfill('0') << (unsigned int)(cur_string[i]);
+          if(i != (*pc_it).getContent().size()-1)
             {
               ss << " ";
             }
@@ -528,26 +552,37 @@ AsgEngine::singleAttack()
     }
 }
 
-std::set<std::string>
+std::vector<Ngram>
 AsgEngine::filtNgrams(BloomFilter &bf,
                       std::vector<std::string> &pkts)
 {
   std::set<std::string> ngrams;
+  std::vector<Ngram> ngram_result;
 
   BOOST_LOG_TRIVIAL(debug)   << "In filtNgrams, num pkt content: " <<
     pkts.size() << std::endl;
 
   std::vector<std::string>::iterator it = pkts.begin();
 
+  unsigned int pkt_num = 1;
   while(it != pkts.end())
     {
       if((*it).size() < m_max_depth)
         {
           it++;
+          pkt_num++;
           continue;
         }
 
+      // We collect ngrams for single packets and return only those ngrams
+      // whose occurance is a local frequency maximum
+
+      std::vector<Ngram> pkt_ngrams;
+
+
       // We take only the shortest string that doesn't get filtered
+      int total_ngram = 0;
+      int svv_ngram = 0;
 
       for(int i=0;i<=(*it).size()-m_min_depth;i++)
         {
@@ -560,14 +595,83 @@ AsgEngine::filtNgrams(BloomFilter &bf,
               if(!bf.contains((uint8_t *)(ngram.data()),ngram.size()))
                 {
                   ngrams.insert(ngram);
-                  break;
+                  Ngram ngram_obj(ngram,i,pkt_num);
+                  pkt_ngrams.push_back(ngram_obj);
+                  svv_ngram++;
+                  //break;
                 }
+              total_ngram++;
             }
         }
+      BOOST_LOG_TRIVIAL(debug)   << "Total ngram: " <<  total_ngram <<
+        " Surviving ngram: " << svv_ngram << std::endl;
 
+      findLocalMaxima(pkt_ngrams,ngram_result,*it,pkt_num);
       it++;
+      pkt_num++;
     }
 
 
-  return ngrams;
+  return ngram_result;
+  //return ngrams;
+}
+
+void
+AsgEngine::findLocalMaxima(std::vector<Ngram> &pkt_ngrams,
+                           std::vector<Ngram> &ngram_result,
+                           std::string pkt_content,
+                           unsigned int pkt_num)
+{
+  std::vector<unsigned int> histo(pkt_content.size(),0);
+
+  // Make histo of number of ngrams that cover each packet position
+
+  for(std::vector<Ngram>::iterator pkt_ngram_it = pkt_ngrams.begin();
+      pkt_ngram_it != pkt_ngrams.end();
+      pkt_ngram_it++)
+    {
+      for(int i = (*pkt_ngram_it).getPktOffset();
+          i < (*pkt_ngram_it).getPktOffset() +
+            (*pkt_ngram_it).getContent().size();
+          i++)
+        {
+          histo[i] += 1;
+        }
+    }
+
+  // Now, find and report local maxima
+
+  unsigned int local_max_cnt = 0;
+  unsigned int start_run = 0;
+  bool in_run = false;
+
+  for(int i=0;i<pkt_content.size();i++)
+    {
+      if(histo[i] > local_max_cnt)
+        {
+          local_max_cnt = histo[i];
+          start_run = i;
+          in_run = true;
+          BOOST_LOG_TRIVIAL(debug)   << "Up to: " << local_max_cnt  <<
+            " at " << i <<
+            std::endl;
+
+        }
+      else if(histo[i] < local_max_cnt)
+        {
+          if(in_run)
+            {
+              // Make a new entry in ngram_result
+              Ngram ngram(pkt_content.substr(start_run,(i-start_run)),
+                      i,pkt_num);
+              ngram_result.push_back(ngram);
+              in_run = false;
+            }
+          local_max_cnt = histo[i];
+          BOOST_LOG_TRIVIAL(debug)   << "Down to: " << local_max_cnt  <<
+            " at " << i <<
+            std::endl;
+          start_run = i;
+        }
+    }
 }
