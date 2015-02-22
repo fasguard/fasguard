@@ -17,7 +17,7 @@
     @param[in] packet The packet itself, starting at the layer 2 header.
     @return The length of the layer 2 header.
 */
-typedef size_t (*layer2_hlen_t)(
+typedef size_t layer2_hlen_t(
     size_t len,
     uint8_t const * packet);
 

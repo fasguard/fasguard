@@ -108,7 +108,7 @@ struct packet_callback_data_t
     bool error;
 
     /** @brief Callback to get the layer 2 header length. */
-    layer2_hlen_t layer2_hlen_callback;
+    layer2_hlen_t *layer2_hlen_callback;
 
     /** @brief Anomaly detector. */
     AnomalyDetector * anomaly_detector;
