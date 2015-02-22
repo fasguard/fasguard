@@ -27,4 +27,7 @@ layer2_hlen_t layer2_hlen_ethernet;
 /** @brief get layer 2 header length when no layer 2 header at all. */
 layer2_hlen_t layer2_hlen_raw;
 
+/** @brief get layer 2 header length for Linux "cooked" header */
+layer2_hlen_t layer2_hlen_linux_cooked;
+
 #endif

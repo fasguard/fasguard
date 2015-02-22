@@ -460,6 +460,11 @@ int main(
             packet_callback_data.layer2_hlen_callback = layer2_hlen_raw;
             break;
 
+        case DLT_LINUX_SLL:
+            packet_callback_data.layer2_hlen_callback =
+                layer2_hlen_linux_cooked;
+            break;
+
         default:
             LOG(LOG_ERR, "Unsupported link type #%i %s (%s)",
                 link_layer_header_type,
