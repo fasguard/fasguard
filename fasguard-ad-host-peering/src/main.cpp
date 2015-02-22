@@ -461,8 +461,10 @@ int main(
             break;
 
         default:
-            LOG(LOG_ERR, "Unsupported linktype with value %d",
-                link_layer_header_type);
+            LOG(LOG_ERR, "Unsupported link type #%i %s (%s)",
+                link_layer_header_type,
+                pcap_datalink_val_to_name(link_layer_header_type),
+                pcap_datalink_val_to_description(link_layer_header_type));
             ret = EXIT_FAILURE;
             goto done;
     }
