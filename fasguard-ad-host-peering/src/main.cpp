@@ -108,7 +108,7 @@ struct packet_callback_data_t
     bool error;
 
     /** @brief Callback to get the layer 2 header length. */
-    layer2_hlen_t layer2_hlen_callback;
+    layer2_hlen_t *layer2_hlen_callback;
 
     /** @brief Anomaly detector. */
     AnomalyDetector * anomaly_detector;
@@ -460,9 +460,16 @@ int main(
             packet_callback_data.layer2_hlen_callback = layer2_hlen_raw;
             break;
 
+        case DLT_LINUX_SLL:
+            packet_callback_data.layer2_hlen_callback =
+                layer2_hlen_linux_cooked;
+            break;
+
         default:
-            LOG(LOG_ERR, "Unsupported linktype with value %d",
-                link_layer_header_type);
+            LOG(LOG_ERR, "Unsupported link type #%i %s (%s)",
+                link_layer_header_type,
+                pcap_datalink_val_to_name(link_layer_header_type),
+                pcap_datalink_val_to_description(link_layer_header_type));
             ret = EXIT_FAILURE;
             goto done;
     }

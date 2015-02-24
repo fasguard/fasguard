@@ -43,3 +43,12 @@ size_t layer2_hlen_raw(
     (void)packet;
     return 0;
 }
+
+size_t layer2_hlen_linux_cooked(
+    size_t len,
+    uint8_t const * packet)
+{
+    (void)len;
+    (void)packet;
+    return 16;
+}
