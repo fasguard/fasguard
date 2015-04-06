@@ -44,8 +44,8 @@ class AttackPacket:
         self.packet = payload
         eth = dpkt.ethernet.Ethernet(payload)
         self.logger.debug('In AttackPacket constructor')
-        #self.logger.debug('Raw packet: %s',payload.encode('hex'))
-        #self.logger.debug('eth=%s',str(eth))
+        self.logger.debug('Raw packet: %s',payload.encode('hex'))
+        self.logger.debug('eth=%s',str(eth))
         #print eth
         ip = eth.data
         tcp = ip.data

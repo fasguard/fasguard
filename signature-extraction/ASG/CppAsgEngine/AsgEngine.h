@@ -51,6 +51,7 @@ class Ngram
 class AsgEngine
 {
  public:
+  static const int MaxContentBytes = 255;
   /**
    * Constructor.
    * @param properties Properties dictionary passed down by Python code.
@@ -133,7 +134,7 @@ class AsgEngine
    */
   std::vector<std::string>
     filtSigFrags(BloomFilter &bf, std::vector<std::string> &frag_pieces);
-  std::vector<Ngram>
+  std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
     filtNgrams(BloomFilter &bf,
                std::vector<std::string> &pkts);
 
@@ -142,6 +143,9 @@ class AsgEngine
                     std::vector<Ngram> &ngram_result,
                     std::string pkt_content,
                     unsigned int pkt_num);
+
+  std::string
+    ngram2ContentString(std::string &ngram);
 
  private:
   DetectorReport m_detector_report;
