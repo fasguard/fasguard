@@ -3,6 +3,7 @@
 #include <fstream>
 #include <boost/log/trivial.hpp>
 #include <boost/regex.hpp>
+#include <boost/unordered_map.hpp>
 #include "BloomFilter.hh"
 #include "MurmurHash3.h"
 
@@ -156,6 +157,7 @@ static const unsigned char BIT_MASK[] = { 0x01,   //00000001
                                           0x80 }; //10000000
 
 static char Filler[BloomFilter::HeaderLengthInBytes];
+static char HeaderBuffer[BloomFilter::HeaderLengthInBytes];
 
 BloomFilter::BloomFilter(size_t inserted_items,
                          double probability_false_positive,
@@ -223,9 +225,33 @@ BloomFilter::BloomFilter(size_t inserted_items,
     BOOST_LOG_TRIVIAL(debug) << "Number of hashes: " <<
                              m_num_hashes << std::endl;
     mBloomFilter.resize((m_bitlength>>3),0);
+
+    // Initialize cache
+
+    m_calc_bit_indeces = CalcBitIndeces(m_num_hashes,m_bitlength);
+
+    BOOST_LOG_TRIVIAL(debug) << "Before Hash Construction" <<
+      std::endl;
+    m_cache = boost::shared_ptr<lru_cache_using_std<
+                                  CalcBitIndeces,
+                                  std::string,
+                                  boost::shared_ptr<std::vector<uint64_t> >,
+                                  boost::unordered_map> >(new
+                                              lru_cache_using_std<
+                                              CalcBitIndeces,
+                                              std::string,
+                                              boost::shared_ptr<std::vector<
+                                              uint64_t> >,
+                                              boost::unordered_map>(m_calc_bit_indeces,
+                                                        NUM_CACHE_ENTRIES));
+    BOOST_LOG_TRIVIAL(debug) << "Before Hash Construction" <<
+      std::endl;
+
 }
 
-BloomFilter::BloomFilter(std::string &filename, bool from_mem_p) :
+
+
+BloomFilter::BloomFilter(const std::string &filename, bool from_mem_p) :
   m_blm_frm_mem(from_mem_p),m_bf_stream(filename.c_str(),
                                         std::ios::out | std::ios::in |
                                         std::ios::binary)
@@ -238,9 +264,9 @@ BloomFilter::BloomFilter(std::string &filename, bool from_mem_p) :
         exit(-1);
 
       }
-    m_bf_stream.read(Filler,HeaderLengthInBytes);
+    m_bf_stream.read(HeaderBuffer,HeaderLengthInBytes);
 
-    std::string bf_prop_string(Filler);
+    std::string bf_prop_string(HeaderBuffer);
 
     // Now, extract the bloom filter file header information
 
@@ -317,21 +343,30 @@ BloomFilter::insert(uint8_t const * data, size_t length)
 {
   size_t num_hash_func = m_num_hashes;
 
+  std::string ngram((char *)data,length);
+
+  boost::shared_ptr<std::vector<uint64_t> > indeces =
+    (*m_cache)(ngram);
+
   // Process the Ngram with each hash function in our list.
-  for(size_t i = 0 ; i < num_hash_func ; i++)
+  //for(size_t i = 0 ; i < num_hash_func ; i++)
+  for(std::vector<uint64_t>::iterator it = indeces->begin();
+      it != indeces->end();
+      it++)
     {
       // compute the bit index into the Bloom filter where this Ngram will
       // be marked
       // unsigned long int bit_index = mHashFuncList[i](str,lgth) %
       // (mFilterSizeBytes * CHAR_SIZE_BITS);
-      uint64_t filterSizeInBits = m_bitlength;
+      // uint64_t filterSizeInBits = m_bitlength;
 
-      uint64_t hash_pair[2];
-      MurmurHash3_x86_128(data,length,hash_seeds[i],hash_pair);
-      uint64_t bit_index
-        = hash_pair[1] %
-        filterSizeInBits;
+      // uint64_t hash_pair[2];
+      // MurmurHash3_x86_128(data,length,hash_seeds[i],hash_pair);
+      // uint64_t bit_index
+      //        = hash_pair[1] %
+      //        filterSizeInBits;
 
+      uint64_t bit_index = *it;
       // mark the appropriate bit in the Bloom filter to indicate that this
       // Ngram has been seen
       if(m_blm_frm_mem)
@@ -383,6 +418,12 @@ BloomFilter::contains(uint8_t const * data, size_t length)
   //bloom_filter *this_bloom = const_cast<bloom_filter *>(this);
   const size_t num_hash_func = m_num_hashes;
 
+  std::string ngram((char *)data,length);
+
+  boost::shared_ptr<std::vector<uint64_t> > indeces =
+    (*m_cache)(ngram);
+
+
   // std::cout << "In contains, number hashes is " << num_hash_func <<
   //   std::endl;
   uint64_t filterSizeInBits =
@@ -395,24 +436,29 @@ BloomFilter::contains(uint8_t const * data, size_t length)
   // the Bloom filter. Notice that the Ngram is only declared to be
   // contained by the Bloom filter if *all* the hash functions report
   // its existence.
-  for(size_t i = 0 ; i < num_hash_func ; i++)
-    {
+  //  for(size_t i = 0 ; i < num_hash_func ; i++)
+  for(std::vector<uint64_t>::iterator it = (*indeces).begin();
+      it != (*indeces).end();
+      it++)
+   {
       // bit index into the Bloom filter where this Ngram would have been marked
       // by the i'th hash function
-      uint64_t hash_pair[2];
-      MurmurHash3_x86_128(data,length,hash_seeds[i],hash_pair);
-      uint64_t bit_index
-        = hash_pair[1] %
-        filterSizeInBits;
+      // uint64_t hash_pair[2];
+      // MurmurHash3_x86_128(data,length,hash_seeds[i],hash_pair);
+      // uint64_t bit_index
+      //        = hash_pair[1] %
+      //        filterSizeInBits;
 
       // the bit index relative to the start of that byte
-      uint64_t bit = bit_index % CHAR_SIZE_BITS;
+      //uint64_t bit = bit_index % CHAR_SIZE_BITS;
+     uint64_t bit = *it % CHAR_SIZE_BITS;
 
       // if the given bit index in the Bloom filter hasn't been marked, we
       // definitely have never seen this Ngram before
       if(m_blm_frm_mem)
         {
-          if((mBloomFilter[bit_index / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
+          //if((mBloomFilter[bit_index / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
+          if((mBloomFilter[*it / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
              BIT_MASK[bit])
             {
               return(false);
@@ -420,7 +466,8 @@ BloomFilter::contains(uint8_t const * data, size_t length)
         }
       else
         {
-          m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+          //m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+          m_bf_stream.seekg(HeaderLengthInBytes+(*it / CHAR_SIZE_BITS));
           unsigned char val;
           m_bf_stream.read((char *)&val,1);
           if((val &  BIT_MASK[bit]) != BIT_MASK[bit])
@@ -459,6 +506,7 @@ BloomFilter::flush(std::string filename)
   out << "NUM_HASHES = " << m_num_hashes << std::endl;
   out << "MIN_NGRAM_SIZE = " << m_min_ngram_size << std::endl;
   out << "MAX_NGRAM_SIZE = " << m_max_ngram_size << std::endl;
+  out << "NUM_PAYLOAD_BYTES_PROCESSED = " << m_bytes_processed << std::endl;
   serialized_header = out.str();
 
   const char *persist_filename = filename.c_str();
@@ -530,4 +578,344 @@ BloomFilter::entryAbove(unsigned int val)
     }
 
   return 0;
+}
+
+
+CalcBitIndeces::CalcBitIndeces(size_t num_hash_func,
+                               uint64_t filter_size_in_bits) :
+  m_num_hash_func(num_hash_func), m_filter_size_in_bits(filter_size_in_bits)
+{}
+
+boost::shared_ptr<std::vector<uint64_t> >
+CalcBitIndeces::operator()(const std::string &ngram)
+{
+  boost::shared_ptr<std::vector<uint64_t> >
+    result(new std::vector<uint64_t>());
+
+  for(size_t i = 0 ; i < m_num_hash_func ; i++)
+    {
+      // bit index into the Bloom filter where this Ngram would have been marked
+      // by the i'th hash function
+      uint64_t hash_pair[2];
+      MurmurHash3_x86_128(ngram.data(),ngram.size(),hash_seeds[i],hash_pair);
+      uint64_t bit_index
+        = hash_pair[1] % m_filter_size_in_bits;
+
+      result->push_back(bit_index);
+
+    }
+  return result;
+}
+
+//void
+// BloomFilter::WriteCombined(BloomFilter &other,std::string output_file)
+// {
+//   if(!Compare(other) || (m_bitlength != other.m_bitlength) ||
+//      (m_num_hashes != other.m_num_hashes))
+//     {
+//       BOOST_LOG_TRIVIAL(error) << "Bloom filters don't match. Aborting..."
+//                             << std::endl;
+//       exit(-1);
+//     }
+
+//   std::string serialized_header;
+
+//   std::ostringstream out;
+
+//   out << "IP_PROTOCOL_NUMBER = " << m_ip_protocol_num << std::endl;
+//   out << "TCP_IP_PORT_NUM = " << m_port_num << std::endl;
+//   out << "BITLENGTH = " << m_bitlength << std::endl;
+//   out << "NUM_HASHES = " << m_num_hashes << std::endl;
+//   out << "MIN_NGRAM_SIZE = " << m_min_ngram_size << std::endl;
+//   out << "MAX_NGRAM_SIZE = " << m_max_ngram_size << std::endl;
+//   out << "NUM_PAYLOAD_BYTES_PROCESSED = " << m_bytes_processed +
+//       other.m_bytes_processed<< std::endl;
+//   serialized_header = out.str();
+
+//   const char *persist_filename = output_file.c_str();
+//   std::ofstream bfStream(persist_filename,std::ios::out | std::ios::binary);
+
+//   if(!bfStream)
+//     {
+//       BOOST_LOG_TRIVIAL(error) <<
+//      "Unable to open: " << persist_filename << std::endl;
+//       exit(-1);
+//     }
+
+//   const char *raw_bytes =
+//     reinterpret_cast<const char *>(serialized_header.c_str());
+//   unsigned int raw_size = serialized_header.size();
+
+//   bfStream.write(raw_bytes,raw_size);
+//   bfStream.write(Filler,HeaderLengthInBytes-raw_size);
+
+//   m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+//        unsigned char val;
+//        m_bf_stream.read((char *)&val,1);
+//        val |= BIT_MASK[bit_index % CHAR_SIZE_BITS];
+//        m_bf_stream.seekp(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+//        m_bf_stream.write((char *)&val,1);
+//      }
+
+//       //cout << "Hash: " << i << ",bit_index = " << bit_index << endl;
+//     }
+// }
+
+/**
+ * Check to see if a string is stored in the data structure. Typically, the
+ * string is an ngram.
+ * @param data The string to search for.
+ * @param length The length of data.
+ */
+// bool
+// BloomFilter::contains(uint8_t const * data, size_t length)
+// {
+//   // number of Ngram hash functions in our list
+//   //bloom_filter *this_bloom = const_cast<bloom_filter *>(this);
+//   const size_t num_hash_func = m_num_hashes;
+
+//   std::string ngram((char *)data,length);
+
+//   boost::shared_ptr<std::vector<uint64_t> > indeces =
+//     (*m_cache)(ngram);
+
+
+//   // std::cout << "In contains, number hashes is " << num_hash_func <<
+//   //   std::endl;
+//   uint64_t filterSizeInBits =
+//     m_bitlength;
+//   // std::cout << "filterSizeInBits = " << filterSizeInBits << std::endl;
+
+//   //mHashFuncList.size();
+
+//   // Process the Ngram with each hash function and see if it exists in
+//   // the Bloom filter. Notice that the Ngram is only declared to be
+//   // contained by the Bloom filter if *all* the hash functions report
+//   // its existence.
+//   //  for(size_t i = 0 ; i < num_hash_func ; i++)
+//   for(std::vector<uint64_t>::iterator it = (*indeces).begin();
+//       it != (*indeces).end();
+//       it++)
+//    {
+//       // bit index into the Bloom filter where this Ngram would have been marked
+//       // by the i'th hash function
+//       // uint64_t hash_pair[2];
+//       // MurmurHash3_x86_128(data,length,hash_seeds[i],hash_pair);
+//       // uint64_t bit_index
+//       //     = hash_pair[1] %
+//       //     filterSizeInBits;
+
+//       // the bit index relative to the start of that byte
+//       //uint64_t bit = bit_index % CHAR_SIZE_BITS;
+//      uint64_t bit = *it % CHAR_SIZE_BITS;
+
+//       // if the given bit index in the Bloom filter hasn't been marked, we
+//       // definitely have never seen this Ngram before
+//       if(m_blm_frm_mem)
+//      {
+//        //if((mBloomFilter[bit_index / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
+//        if((mBloomFilter[*it / CHAR_SIZE_BITS] & BIT_MASK[bit]) !=
+//           BIT_MASK[bit])
+//          {
+//            return(false);
+//          }
+//      }
+//       else
+//      {
+//        //m_bf_stream.seekg(HeaderLengthInBytes+(bit_index / CHAR_SIZE_BITS));
+//        m_bf_stream.seekg(HeaderLengthInBytes+(*it / CHAR_SIZE_BITS));
+//        unsigned char val;
+//        m_bf_stream.read((char *)&val,1);
+//        if((val &  BIT_MASK[bit]) != BIT_MASK[bit])
+//          {
+//            return false;
+//          }
+
+//      }
+//     }
+
+//   // It appears that the Ngram has been seen before
+//   // NOTE: This answer is not 100% reliable. See the class comments for details
+//   // on false drop probability
+
+//   // BOOST_LOG_TRIVIAL(debug) <<
+//   //   "BloomFilter Matched String!!! " << std::endl;
+
+//   return(true);
+
+// }
+
+/**
+ * Flush the data structure to a file.
+ * @param filename Name of file used for persistence.
+ */
+// bool
+// BloomFilter::flush(std::string filename)
+// {
+//   std::string serialized_header;
+
+//   std::ostringstream out;
+
+//   out << "IP_PROTOCOL_NUMBER = " << m_ip_protocol_num << std::endl;
+//   out << "TCP_IP_PORT_NUM = " << m_port_num << std::endl;
+//   out << "BITLENGTH = " << m_bitlength << std::endl;
+//   out << "NUM_HASHES = " << m_num_hashes << std::endl;
+//   out << "MIN_NGRAM_SIZE = " << m_min_ngram_size << std::endl;
+//   out << "MAX_NGRAM_SIZE = " << m_max_ngram_size << std::endl;
+//   out << "NUM_PAYLOAD_BYTES_PROCESSED = " << m_bytes_processed << std::endl;
+//   serialized_header = out.str();
+
+//   const char *persist_filename = filename.c_str();
+//   std::ofstream bfStream(persist_filename,std::ios::out | std::ios::binary);
+
+//   if(!bfStream)
+//     {
+//       BOOST_LOG_TRIVIAL(error) <<
+//      "Unable to open: " << filename << std::endl;
+//       return false;
+//     }
+//   const char *raw_bytes =
+//     reinterpret_cast<const char *>(serialized_header.c_str());
+//   unsigned int raw_size = serialized_header.size();
+
+//   bfStream.write(raw_bytes,raw_size);
+//   bfStream.write(Filler,HeaderLengthInBytes-raw_size);
+
+
+//   //  bfStream.write(it,mBloomFilter.size());
+//   BOOST_LOG_TRIVIAL(debug) << "Before output: " << std::endl;
+//   unsigned int e_above = entryAbove(1);
+//   if(e_above > 1)
+//     {
+//       std::cout << "Entry above 1 is " << e_above << std::endl;
+//     }
+//   else
+//     {
+//       std::cout << "FAILED ENTRY ABOVE TEST" << std::endl;
+//     }
+
+//   std::vector<unsigned int> histo(255,0);
+//   std::vector<uint8_t>::iterator it = mBloomFilter.begin();
+
+//   while(it != mBloomFilter.end())
+//     {
+//       uint8_t val = *it;
+//       histo[*it] += 1;
+//      it++;
+//     }
+
+//   for(int i=0;i<255;i++)
+//     {
+//       BOOST_LOG_TRIVIAL(debug) << "histo[" << i << "]="
+//                             << histo[i] << std::endl;
+//     }
+
+//   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter Size: " <<
+//     mBloomFilter.size() << std::endl;
+
+//   bfStream.write((char *)mBloomFilter.data(),mBloomFilter.size());
+//   bfStream.close();
+// }
+
+// unsigned int
+// BloomFilter::entryAbove(unsigned int val)
+// {
+//   std::vector<uint8_t>::iterator it = mBloomFilter.begin();
+
+//   //  bfStream.write(it,mBloomFilter.size());
+
+//   while(it != mBloomFilter.end())
+//     {
+//       if(*it > val)
+//      return *it;
+//       // BOOST_LOG_TRIVIAL(debug) << "Output byte: " << std::hex
+//       //                            << (unsigned int)*it << std::endl;
+//       it++;
+//     }
+
+//   return 0;
+// }
+
+
+// CalcBitIndeces::CalcBitIndeces(size_t num_hash_func,
+//                             uint64_t filter_size_in_bits) :
+//   m_num_hash_func(num_hash_func), m_filter_size_in_bits(filter_size_in_bits)
+// {}
+
+// boost::shared_ptr<std::vector<uint64_t> >
+// CalcBitIndeces::operator()(const std::string &ngram)
+// {
+//   boost::shared_ptr<std::vector<uint64_t> >
+//     result(new std::vector<uint64_t>());
+
+//   for(size_t i = 0 ; i < m_num_hash_func ; i++)
+//     {
+//       // bit index into the Bloom filter where this Ngram would have been marked
+//       // by the i'th hash function
+//       uint64_t hash_pair[2];
+//       MurmurHash3_x86_128(ngram.data(),ngram.size(),hash_seeds[i],hash_pair);
+//       uint64_t bit_index
+//      = hash_pair[1] % m_filter_size_in_bits;
+
+//       result->push_back(bit_index);
+
+//     }
+//   return result;
+// }
+
+void
+BloomFilter::WriteCombined(BloomFilter &other,std::string output_file)
+{
+  if(!Compare(other) || (m_bitlength != other.m_bitlength) ||
+     (m_num_hashes != other.m_num_hashes))
+    {
+      BOOST_LOG_TRIVIAL(error) << "Bloom filters don't match. Aborting..."
+                               << std::endl;
+      exit(-1);
+    }
+
+  std::string serialized_header;
+
+  std::ostringstream out;
+
+  out << "IP_PROTOCOL_NUMBER = " << m_ip_protocol_num << std::endl;
+  out << "TCP_IP_PORT_NUM = " << m_port_num << std::endl;
+  out << "BITLENGTH = " << m_bitlength << std::endl;
+  out << "NUM_HASHES = " << m_num_hashes << std::endl;
+  out << "MIN_NGRAM_SIZE = " << m_min_ngram_size << std::endl;
+  out << "MAX_NGRAM_SIZE = " << m_max_ngram_size << std::endl;
+  out << "NUM_PAYLOAD_BYTES_PROCESSED = " << m_bytes_processed +
+      other.m_bytes_processed<< std::endl;
+  serialized_header = out.str();
+
+  const char *persist_filename = output_file.c_str();
+  std::ofstream bfStream(persist_filename,std::ios::out | std::ios::binary);
+
+  if(!bfStream)
+    {
+      BOOST_LOG_TRIVIAL(error) <<
+        "Unable to open: " << persist_filename << std::endl;
+      exit(-1);
+    }
+
+  const char *raw_bytes =
+    reinterpret_cast<const char *>(serialized_header.c_str());
+  unsigned int raw_size = serialized_header.size();
+
+  bfStream.write(raw_bytes,raw_size);
+  bfStream.write(Filler,HeaderLengthInBytes-raw_size);
+  //bfStream.close();
+  //exit(-1);
+  m_bf_stream.seekg(HeaderLengthInBytes);
+  other.m_bf_stream.seekg(HeaderLengthInBytes);
+
+  for(uint_fast64_t i=0;i<(m_bitlength>>3);i++)
+    {
+      uint_fast8_t val1,val2,rval;
+      m_bf_stream.read((char *)&val1,sizeof(val1));
+      other.m_bf_stream.read((char *)&val2,sizeof(val2));
+      rval = (val1 | val2);
+      bfStream.write((char *)&rval,sizeof(rval));
+    }
+  bfStream.close();
 }

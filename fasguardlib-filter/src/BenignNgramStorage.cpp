@@ -31,9 +31,14 @@ BenignNgramStorage::loadParams(const std::map<std::string,std::string>
             std::istringstream(cit->second) >> m_min_ngram_size;
           }
       else if((cit->first).compare(std::string("MAX_NGRAM_SIZE")) == 0)
-          {
-            std::istringstream(cit->second) >> m_max_ngram_size;
-          }
+        {
+          std::istringstream(cit->second) >> m_max_ngram_size;
+        }
+      else if((cit->first).compare(std::string("NUM_PAYLOAD_BYTES_PROCESSED"))
+              == 0)
+        {
+          std::istringstream(cit->second) >> m_bytes_processed;
+        }
       else
         {
           BOOST_LOG_TRIVIAL(error) << "Unknown property: " <<
@@ -46,3 +51,19 @@ BenignNgramStorage::loadParams(const std::map<std::string,std::string>
 
 BenignNgramStorage::~BenignNgramStorage()
 {}
+
+void
+BenignNgramStorage::setNumBytesProcessed(unsigned long long int
+                                         num_bytes_processed)
+{
+  m_bytes_processed = num_bytes_processed;
+}
+
+bool
+BenignNgramStorage::Compare(const BenignNgramStorage &other)
+{
+  return (m_ip_protocol_num == other.m_ip_protocol_num) &&
+    (m_port_num == other.m_port_num) &&
+    (m_min_ngram_size == other.m_min_ngram_size) &&
+    (m_max_ngram_size == other.m_max_ngram_size);
+}

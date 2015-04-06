@@ -61,6 +61,18 @@ public:
    * @param filename Name of file used for persistence.
    */
   virtual bool flush(std::string filename) = 0;
+  /**
+   * Setter for number of bytes processed, set by PcapFileEngine.
+   * @param num_bytes_processed Total number of payload bytes processed.
+   */
+  void setNumBytesProcessed(unsigned long long int num_bytes_processed);
+  /**
+   * Compares the parameters for two Bloom filters. Returns true if they are
+   * compatible.
+   * @param other Other Bloom filter's BenignNgramStorage element.
+   * @return True if compatible, false if not.
+   */
+  bool Compare(const BenignNgramStorage &other);
 protected:
   int m_ip_protocol_num;
   int m_port_num;
@@ -68,5 +80,7 @@ protected:
   int m_max_ngram_size;
   uint_fast64_t m_insertions;
   uint_fast64_t m_unique_insertions;
+  unsigned long long int m_bytes_processed;
+
 };
 #endif

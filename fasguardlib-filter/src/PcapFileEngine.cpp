@@ -8,12 +8,17 @@ namespace fasguard
   PcapFileEngine::PcapFileEngine(const std::vector<std::string> pcap_filenames,
                                  BloomFilter &b_filter,int min_depth,
                                  int max_depth) :
-    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth,true)
+    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth,true),
+    m_bytes_processed(0)
   {
     for (const std::string &p_file : pcap_filenames)
       {
         fillBloom(p_file);
       }
+
+    // Record number of bytes inserted into Bloom Filter
+
+    m_b_filter.setNumBytesProcessed(m_bytes_processed);
   }
 
   void PcapFileEngine::fillBloom(std::string pcap_filename)
@@ -99,11 +104,11 @@ PcapFileEngine::processFile(const std::string& filename)
                      payload_len);
 
     // accumulate bytes_processed with the length of the current payload
-    bytes_processed += payload_len;
-    if(bytes_processed > next_report_bytes)
+    m_bytes_processed += payload_len;
+    if(m_bytes_processed > next_report_bytes)
       {
         BOOST_LOG_TRIVIAL(info)
-          << "Bytes Processed: " << bytes_processed << std::endl;
+          << "Bytes Processed: " << m_bytes_processed << std::endl;
         next_report_bytes += BytesProcessedDelta;
       }
 
