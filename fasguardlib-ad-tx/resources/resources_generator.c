@@ -137,4 +137,6 @@ int main(
 
         printf("#endif\n");
     }
+
+    return EXIT_SUCCESS;
 }
