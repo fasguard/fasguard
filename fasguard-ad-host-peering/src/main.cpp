@@ -248,13 +248,24 @@ static void handle_attacks(
             .value = { .double_val = 0.42 },
         },
 
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_LAYER2_TYPE,
+            .value = {
+                .int_val =
+                    pcap_datalink(packet_callback_data->pcap_handle),
+                },
+        },
+
         fasguard_end_of_options,
     };
 
     if (!fasguard_add_packet_to_attack_instance(
         instance,
-        pcap_header->caplen - layer2_hlen,
-        packet + layer2_hlen,
+        pcap_header->caplen,
+        packet,
+        layer2_hlen,
         packet_options))
     {
         LOG_PERROR_R(LOG_WARNING,
