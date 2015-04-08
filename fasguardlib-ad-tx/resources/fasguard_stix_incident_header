@@ -1,2 +1,6 @@
                 <stix:Incident xsi:type="incident:IncidentType">
+                        <incident:Description>
+                                MultipleAttack = TRUE
+                                AttackBoundaries = FALSE
+                        </incident:Description>
                         <incident:Related_Observables>

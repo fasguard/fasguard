@@ -131,6 +131,14 @@ extern fasguard_option_type const fasguard_end_of_options;
 #define FASGUARD_OPTION_PROBABILITY_MALICIOUS UINT16_C(0x0002)
 
 /**
+    @brief Type of the layer 2 header.
+
+    #fasguard_option_value_type::int_val will contain a DLT_ value, as
+    specified at http://www.tcpdump.org/linktypes.html.
+*/
+#define FASGUARD_OPTION_LAYER2_TYPE UINT16_C(0x0003)
+
+/**
     @brief Opaque handle for a single output stream.
 */
 typedef void * fasguard_attack_output_type;
@@ -261,10 +269,16 @@ bool fasguard_end_attack_instance(
       - #FASGUARD_OPTION_TIMESTAMP: Arrival time of the packet.
       - #FASGUARD_OPTION_PROBABILITY_MALICIOUS: Likelihood that the packet
         is part of an attack.
+      - #FASGUARD_OPTION_LAYER2_TYPE: Type of layer 2 header. This option
+        is mandatory if @p l3_offset is non-zero.
 
     @param[in] instance Attack instance to append this packet to.
     @param[in] packet_length Length of @p packet.
-    @param[in] packet Packet data, starting at the IP header.
+    @param[in] packet Packet data, which may include the layer 2
+                      header.
+    @param[in] l3_offset Offset of the layer 3 header within
+                         @p packet. If no layer 2 header is present,
+                         then this is zero.
     @param[in] options Options for the packet.
     @return True on success, false on error. If false is returned, errno will be
             set to indicate the error.
@@ -273,6 +287,7 @@ bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_type instance,
     size_t packet_length,
     uint8_t const * packet,
+    size_t l3_offset,
     fasguard_option_type const * options);
 
 

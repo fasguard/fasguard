@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pcap/pcap.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -735,12 +736,14 @@ bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_type _instance,
     size_t packet_length,
     uint8_t const * packet,
+    size_t l3_offset,
     fasguard_option_type const * options)
 {
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
     struct timeval const * timestamp = NULL;
     double probability_attack = -1.0;
+    char const * link_type = NULL;
     ssize_t written;
 
     for (size_t i = 0;
@@ -755,6 +758,21 @@ bool fasguard_add_packet_to_attack_instance(
 
             case FASGUARD_OPTION_PROBABILITY_MALICIOUS:
                 probability_attack = options[i].value.double_val;
+                break;
+
+            case FASGUARD_OPTION_LAYER2_TYPE:
+                switch (options[i].value.int_val)
+                {
+                    case DLT_EN10MB:
+                        link_type = "ethernet";
+                        break;
+
+                    default:
+                        // The link type is unsupported, so we'll
+                        // strip the layer 2 header.
+                        link_type = NULL;
+                        break;
+                }
                 break;
 
             default:
@@ -776,10 +794,56 @@ bool fasguard_add_packet_to_attack_instance(
         return false;
     }
 
+    written = write(instance->instancefd,
+        fasguard_stix_packet_keywords_header,
+        fasguard_stix_packet_keywords_header_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if (
+        (size_t)written != fasguard_stix_packet_keywords_header_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    if (link_type != NULL)
+    {
+        char * link_type_str = sprintf_alloc(
+            (char const *)fasguard_stix_packet_keyword_link_type_fmt,
+            link_type);
+        if (link_type_str == NULL)
+        {
+            // errno set by sprintf_alloc()
+            return false;
+        }
+
+        size_t const link_type_strlen = strlen(link_type_str);
+
+        written = write(instance->instancefd, link_type_str,
+            link_type_strlen);
+        int errno_save = errno;
+
+        free(link_type_str);
+
+        if (written < 0)
+        {
+            errno = errno_save;
+            return false;
+        }
+        else if ((size_t)written != link_type_strlen)
+        {
+            errno = EIO;
+            return false;
+        }
+    }
+
     if (probability_attack >= 0.0 && probability_attack <= 1.0)
     {
         char * probability_attack_str = sprintf_alloc(
-            (char const *)fasguard_stix_packet_prob_attack_fmt,
+            (char const *)fasguard_stix_packet_keyword_prob_attack_fmt,
             probability_attack);
         if (probability_attack_str == NULL)
         {
@@ -806,6 +870,21 @@ bool fasguard_add_packet_to_attack_instance(
             errno = EIO;
             return false;
         }
+    }
+
+    written = write(instance->instancefd,
+        fasguard_stix_packet_keywords_footer,
+        fasguard_stix_packet_keywords_footer_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if (
+        (size_t)written != fasguard_stix_packet_keywords_footer_strlen)
+    {
+        errno = EIO;
+        return false;
     }
 
     if (timestamp != NULL)
@@ -870,10 +949,26 @@ bool fasguard_add_packet_to_attack_instance(
         return false;
     }
 
-    if (!write_b64(instance->instancefd, packet, packet_length))
+    if (link_type == NULL)
     {
-        // errno set by write_b64()
-        return false;
+        // Unsupported link type or no link headers, so only write
+        // layers 3 and up.
+        if (!write_b64(instance->instancefd, packet + l3_offset,
+            packet_length - l3_offset))
+        {
+            // errno set by write_b64()
+            return false;
+        }
+    }
+    else
+    {
+        // Supported link type, so write the whole packet, including
+        // layer 2 headers.
+        if (!write_b64(instance->instancefd, packet, packet_length))
+        {
+            // errno set by write_b64()
+            return false;
+        }
     }
 
     written = write(instance->instancefd, fasguard_stix_packet_data_footer,

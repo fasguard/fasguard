@@ -1,5 +1,5 @@
-                                                <cybox:Object >
-                                                        <cybox:Properties xsi:type="ArtifactObj:ArtifactObjectType" type="Network Traffic" >
+                                                <cybox:Object>
+                                                        <cybox:Properties xsi:type="ArtifactObj:ArtifactObjectType" type="Network Traffic">
                                                                 <ArtifactObj:Packaging>
                                                                         <ArtifactObj:Encoding algorithm="Base64"/>
                                                                 </ArtifactObj:Packaging>
