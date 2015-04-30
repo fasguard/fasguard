@@ -321,6 +321,24 @@ BloomFilter::BloomFilter(const std::string &filename, bool from_mem_p) :
       }
     BOOST_LOG_TRIVIAL(debug) << "Finished constructing BloomFilter"
                              << std::endl;
+  // Construct cache
+    BOOST_LOG_TRIVIAL(debug) << "Before Hash Construction" <<
+      std::endl;
+    m_calc_bit_indeces = CalcBitIndeces(m_num_hashes,m_bitlength);
+
+  m_cache = boost::shared_ptr<lru_cache_using_std<
+                                  CalcBitIndeces,
+                                  std::string,
+                                  boost::shared_ptr<std::vector<uint64_t> >,
+                                  boost::unordered_map> >(new
+                                              lru_cache_using_std<
+                                              CalcBitIndeces,
+                                              std::string,
+                                              boost::shared_ptr<std::vector<
+                                              uint64_t> >,
+                                              boost::unordered_map>(m_calc_bit_indeces,
+                                                        NUM_CACHE_ENTRIES));
+
 }
   /**
    * Destructor.
