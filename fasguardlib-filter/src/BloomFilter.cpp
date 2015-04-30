@@ -419,9 +419,16 @@ BloomFilter::contains(uint8_t const * data, size_t length)
 
   std::string ngram((char *)data,length);
 
+  //std::cout << "Before retrieving cache" << std::endl;
+
+  //std::cout.flush();
+
   boost::shared_ptr<std::vector<uint64_t> > indeces =
     (*m_cache)(ngram);
 
+  //std::cout << "After retrieving cache" << std::endl;
+
+  //std::cout.flush();
 
   // std::cout << "In contains, number hashes is " << num_hash_func <<
   //   std::endl;
