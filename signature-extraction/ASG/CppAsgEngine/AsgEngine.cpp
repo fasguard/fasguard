@@ -13,6 +13,9 @@
 #include "Dendrogram.hh"
 #include "RegexExtractorLCSS.hh"
 #include "SuricataRuleMaker.hpp"
+#include "SmlLrgSigExtrct.hh"
+#include "Trie.h"
+//#include "MemoryTrieNodeFactory.h"
 
 using namespace boost::python;
 
@@ -429,7 +432,7 @@ AsgEngine::filtSigFrags(BloomFilter &bf,
           BOOST_LOG_TRIVIAL(debug)   << "Size of frag_piece: " <<
             (*it).size() << std::endl;
 
-          for(int i=0;i<=(*it).size()-depth;i++)
+          for(unsigned int i=0;i<=(*it).size()-depth;i++)
             {
               ngrams.insert((*it).substr(i,depth));
             }
@@ -615,32 +618,72 @@ AsgEngine::singleAttack()
       pc_it++;
     }
   ruleStream.close();
+  // while(pcre_it != ngram_frag_list.end())
+  //   {
+  //     std::vector<std::string>::iterator ng_it = (*pcre_it).begin();
+  //     while(ng_it != (*pcre_it).end())
+  //    {
+  //      std::string sig_hex = ngram2ContentString(*ng_it);
+  //      if(pcre_seen_already.find(sig_hex) != pcre_seen_already.end())
+  //        {
+  //          ng_it++;
+  //          continue;
+  //        }
+  //      else
+  //        {
+  //          pcre_seen_already.insert(sig_hex);
+  //        }
+  //      std::vector<std::string> sig_vec;
+  //      sig_vec.push_back(sig_hex);
+  //      std::string snort_rule = srm.makeContentRule(sig_vec);
+  //      BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
+
+  //      pcreRuleStream << snort_rule << endl;
+  //      ng_it++;
+  //    }
+
+  //     pcre_it++;
+  //   }
+
+
+  // Collect all fragments into a ste
+
+  std::set<std::string> ngram_frag_set;
+
   while(pcre_it != ngram_frag_list.end())
     {
       std::vector<std::string>::iterator ng_it = (*pcre_it).begin();
       while(ng_it != (*pcre_it).end())
         {
-          std::string sig_hex = ngram2ContentString(*ng_it);
-          if(pcre_seen_already.find(sig_hex) != pcre_seen_already.end())
-            {
-              ng_it++;
-              continue;
-            }
-          else
-            {
-              pcre_seen_already.insert(sig_hex);
-            }
-          std::vector<std::string> sig_vec;
-          sig_vec.push_back(sig_hex);
-          std::string snort_rule = srm.makeContentRule(sig_vec);
-          BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
+          ngram_frag_set.insert(*ng_it);
 
-          pcreRuleStream << snort_rule << endl;
           ng_it++;
         }
 
       pcre_it++;
     }
+
+  SmlLrgSigExtrct slse(ngram_frag_set);
+
+  boost::shared_ptr<std::set<std::string> > short_strings_ptr =
+    slse.smallStringSet();
+
+  std::set<std::string>::iterator str_it = (*short_strings_ptr).begin();
+
+  while(str_it != (*short_strings_ptr).end())
+    {
+      std::string ngram = *str_it;
+      std::string sig_hex = ngram2ContentString(ngram);
+      std::vector<std::string> sig_vec;
+      sig_vec.push_back(sig_hex);
+      std::string snort_rule = srm.makeContentRule(sig_vec);
+      BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
+
+      pcreRuleStream << snort_rule << endl;
+
+      str_it++;
+    }
+
   pcreRuleStream.close();
 }
 
