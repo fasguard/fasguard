@@ -678,8 +678,13 @@ AsgEngine::filtNgrams(BloomFilter &bf,
       int total_ngram = 0;
       int svv_ngram = 0;
 
+      //std::cout << "Packet " << pkt_num << std::endl;
+      //std::cout.flush();
+
       for(int i=0;i<=(*it).size()-m_min_depth;i++)
         {
+          //std::cout << "Offset " << i << std::endl;
+          //std::cout.flush();
           int local_max_depth = (i+m_max_depth < (*it).size())?
             m_max_depth:((*it).size()-i);
           for(int depth=m_min_depth;depth<=local_max_depth;depth++)
@@ -706,6 +711,11 @@ AsgEngine::filtNgrams(BloomFilter &bf,
       it++;
       pkt_num++;
     }
+  BOOST_LOG_TRIVIAL(debug)   << "In filtNgrams, before return"
+                             << std::endl;
+  std::cout << "In filtNgrams, before return" << std::endl;
+
+  std::cout.flush();
 
   return  std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
     (ngram_result,ngram_accum_result);
