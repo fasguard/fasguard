@@ -256,7 +256,6 @@ BloomFilter::BloomFilter(const std::string &filename, bool from_mem_p) :
                                         std::ios::out | std::ios::in |
                                         std::ios::binary)
 {
-
     if(!m_bf_stream)
       {
         BOOST_LOG_TRIVIAL(error) << "Unable to open: " <<
