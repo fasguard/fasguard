@@ -32,7 +32,8 @@ project
 
 # Declare the three extension modules.  You can specify multiple
 # source files after the colon separated by spaces.
-python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp Trie.cpp SuricataRuleMaker.cpp SmlLrgSigExtrct.cpp ../DetectorReports/DetectorReport.cpp ../../../fasguardlib-filter/src/MurmurHash3.cpp ../../../fasguardlib-filter/src/BloomFilter.cpp ../../../fasguardlib-filter/src/BenignNgramStorage.cpp ../../../fasguardlib-filter/src/filter.cpp /usr/local/lib/libboost_log.so.1.57.0 /usr/local/lib/libboost_regex.so.1.57.0 /usr/lib/libcrypto++.so.9.0.0 ;
+#python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp Trie.cpp SuricataRuleMaker.cpp SmlLrgSigExtrct.cpp ../DetectorReports/DetectorReport.cpp ../../../fasguardlib-filter/src/MurmurHash3.cpp ../../../fasguardlib-filter/src/BloomFilter.cpp ../../../fasguardlib-filter/src/BenignNgramStorage.cpp ../../../fasguardlib-filter/src/filter.cpp /usr/local/lib/libboost_log.so.1.57.0 /usr/local/lib/libboost_regex.so.1.57.0 /usr/lib/libcrypto++.so.9.0.0 ;
+python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp Trie.cpp SuricataRuleMaker.cpp SmlLrgSigExtrct.cpp ../DetectorReports/DetectorReport.cpp /usr/local/lib/libboost_log.so.1.57.0 /usr/local/lib/libboost_regex.so.1.57.0 /usr/lib/libcrypto++.so.9.0.0 ../../../fasguardlib-filter/src/libBloom.so ;
 
 # Put the extension and Boost.Python DLL in the current directory, so
 # that running script by hand works.
