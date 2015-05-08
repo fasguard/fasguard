@@ -169,7 +169,14 @@ Dendrogram::makeDendrogram()
 
   new_tree_set = old_tree_set;
 
-  while(new_tree_set.size() != 1)
+  if(new_tree_set.size() < 1)
+    {
+      BOOST_LOG_TRIVIAL(error) <<
+        "Dendrogram tree size is < 1: " << new_tree_set.size() << std::endl;
+      exit(-1);
+    }
+
+  while(new_tree_set.size() > 1)
     {
       old_tree_set = new_tree_set;
 
