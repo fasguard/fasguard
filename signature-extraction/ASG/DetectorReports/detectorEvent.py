@@ -33,32 +33,52 @@ class AttackPacket:
     Arguments:
     prob_of_attack - A double representing the probability that this packet is
         an attack
+    link_type - If link_type is 'ethernet', the ethernet header is included
+        with the data. If it is 'raw', the packet content begins with the
+        ip header
     time_stamp - The pcap time stamp of the packet
     payload - Packet payload.
     """
 
-    def __init__(self, prob_of_attack, time_stamp, payload):
+    def __init__(self, prob_of_attack, link_type, time_stamp, payload):
         self.logger = logging.getLogger('simple_example')
         self.probAttack = prob_of_attack
+        self.linkType = link_type
         self.timeStamp = time_stamp
         self.packet = payload
-        eth = dpkt.ethernet.Ethernet(payload)
-        self.logger.debug('In AttackPacket constructor')
-        self.logger.debug('Raw packet: %s',payload.encode('hex'))
-        self.logger.debug('eth=%s',str(eth))
-        #print eth
-        ip = eth.data
-        tcp = ip.data
+        if link_type == 'ethernet':
+            eth = dpkt.ethernet.Ethernet(payload)
+            self.logger.debug('In AttackPacket constructor')
+            self.logger.debug('Raw packet: %s',payload.encode('hex'))
+            self.logger.debug('eth=%s',str(eth))
+            #print eth
+            ip = eth.data
+        elif link_type == 'raw':
+            ip = dpkt.ip.IP(payload)
+        else:
+            self.logger.error('Bad link type: %s', link_type)
+            sys.exit(-1)
         self.protocol = ip.p
+        self.ipProto = ip.p
 
         #self.logger.debug('TCP destination port: %d',tcp.dport)
         if ip.p == dpkt.ip.IP_PROTO_TCP:
-            self.ipProto = ip.p
             tcp = ip.data
             self.logger.debug('TCP destination port: %d',tcp.dport)
             self.Dport = tcp.dport
             self.Sport = tcp.sport
             self.payload = tcp.data
+        elif ip.p == dpkt.ip.IP_PROTO_UDP:
+            udp = ip.data
+            self.logger.debug('UDP destination port: %d',udp.dport)
+            self.logger.debug('UDP source port: %d',udp.sport)
+            self.Dport = udp.dport
+            self.Sport = udp.sport
+            self.payload = udp.data
+        else:
+            self.logger.error('Bad proto: %d', ip.p)
+            sys.exit(-1)
+
 
 class AttackInstance:
     """
@@ -181,7 +201,7 @@ class DetectorEvent:
                 else:
                     packet_list = []
                     for i in range(len(prob_of_attack_list)):
-                        ap = AttackPacket(prob_of_attack_list[i],
+                        ap = AttackPacket(prob_of_attack_list[i], 'ethernet',
                                           time_stamps[i], payloads[i])
                         packet_list.append(ap)
 
@@ -307,7 +327,8 @@ class DetectorEvent:
                 properties_dict = {}
                 packet_dict = {}
                 observable_dict['observable'] = data_dict
-                data_dict['keywords'] = [u'ProbAttack=' +
+                data_dict['keywords'] = ['LinkType=ethernet',
+                                         u'ProbAttack=' +
                                          str(packet.probAttack)]
                 data_dict['object'] = properties_dict
                 properties_dict['properties'] = packet_dict
@@ -428,14 +449,18 @@ class DetectorEvent:
         Returns:
         An AttackInstance object.
         """
-        m = re.search(r'ProbAttack=([0-9.]+)',
-                      observable['observable']['keywords'][0])
         prob_attack = 0.0
-        if m:
-            prob_attack = float(m.group(1))
-        else:
-            self.logger.error('Unabale to find ProbAttack keyworkd')
-            sys.exit(-1)
+        link_type = 'raw'
+        for keyword in observable['observable']['keywords']:
+            m_pa = re.search(r'ProbAttack=([0-9.]+)', keyword)
+            m_lt = re.search(r'LinkType=(\w+)', keyword)
+            if m_pa:
+                prob_attack = float(m_pa.group(1))
+            elif m_lt:
+                link_type = m_lt.group(1)
+            else:
+                self.logger.error('Unabale to find ProbAttack keyworkd')
+                sys.exit(-1)
         if (observable['observable']['object']['properties']['packaging']
             [0]['algorithm'] != 'Base64'):
             self.logger.error('Packet encoding not Base64')
@@ -474,4 +499,4 @@ class DetectorEvent:
         epoch_time_from_local = time.mktime(time_tuple) + usec
         self.logger.debug('Epoch time from local: %f',epoch_time_from_local)
         self.logger.debug('Epoch Time: %f',epoch_time)
-        return AttackPacket(prob_attack, epoch_time_from_local, binary_packet)
+        return AttackPacket(prob_attack, link_type, epoch_time_from_local, binary_packet)
