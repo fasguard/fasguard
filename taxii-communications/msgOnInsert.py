@@ -37,9 +37,13 @@ class MsgOnInsert:
         """
         con = sqlite3.connect(self.dBFilename)
         cur = con.cursor()
+        sql_stmt = 'select max(id) from %s' % (self.Table)
+        cur.execute(sql_stmt)
+        cur_index = cur.fetchone()[0]
+        # Set max at initial max
+        self.maxIndex = cur_index
         while self.loopFlag:
             time.sleep(self.sleepSec)
-            sql_stmt = 'select max(id) from %s' % (self.Table)
             self.logger.debug('Query: %s',sql_stmt)
             cur.execute(sql_stmt)
             cur_index = cur.fetchone()[0]
@@ -48,6 +52,8 @@ class MsgOnInsert:
                 self.pipeHandle.write('%d\n'%(cur_index))
                 self.pipeHandle.flush()
                 self.maxIndex = cur_index
+            else:
+                self.logger.debug('Pipe empty')
             self.logger.debug('Cur Index = %d',cur_index)
 
 if __name__ == "__main__":
