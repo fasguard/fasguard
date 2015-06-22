@@ -22,7 +22,7 @@
 /**
     @brief Number of bytes needed from the beginning of each packet.
 */
-#define ANOMALY_SNAPLEN 65535
+#define ANOMALY_SNAPLEN 64
 
 /**
     @brief This contains all the state for the anomaly detector.

@@ -32,29 +32,14 @@ public:
   /**
    * Given a signature string in blank-separated hex, a Snort rule is returned.
    *
-   * @param sig_vec Signatures as blank-separated hex with each being a
-   *    maximum of 255 bytes.
+   * @param signature Signature as blank-separated hex.
    * @param sid The signature id number.
    * @param rev The sid version number.
    * @return Snort rule.
    */
   std::string
-  makeContentRule(std::vector<std::string> &sig_vec,
-                  unsigned int sid = sid_cnt,
+  makeContentRule(std::string &signature,unsigned int sid = sid_cnt,
                   unsigned int rev = 0);
-  /**
-   * Given a vector of ngram fragments, a Snort rule consisting of a pcre
-   * containing an alternation of the various fragments is returned.
-   *
-   * @param ngram_frag_list A vector of ngram fragments to use in the signature.
-   * @param sid The signature id number.
-   * @param rev The sid version number.
-   * @return Snort Rule.
-   */
-  std::string
-  makePcreRule(std::vector<std::string> &ngram_frags,
-               unsigned int sid = sid_cnt,
-               unsigned int rev = 0);
 
 protected:
   static unsigned int sid_cnt;

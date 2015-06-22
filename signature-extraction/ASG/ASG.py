@@ -16,6 +16,7 @@ import sys
 import os
 import os.path
 import argparse
+import re
 import AsgEngine
 #import boost_log
 import ctypes
@@ -103,31 +104,29 @@ def setup():
         snippet_rule_file = properties.getProperty('ASG.SuricataPcreRuleFile')
         cluster_rule_file = properties.getProperty(
             'ASG.SuricataUnsupervisedClusterRuleFile')
-        stix_rule_out = properties.getProperty('ASG.StixRuleFile')
+        ruleDir = properties.getProperty('ASG.FASGuardStixRuleDir')
         while stx_frm_db.processStix():
             process_detection(stix_xml_filename,properties,args.debug)
-            stix_rule_fh = open(stix_rule_out,"w")
             rule_list = []
-            if joined_xmit and os.path.isfile(joined_rule_file):
-                joined_rule_fh = open(joined_rule_file,"r")
-                for line in joined_rule_fh:
-                    rule_list.append(line)
-                joined_rule_fh.close()
-            if snippet_xmit and os.path.isfile(snippet_rule_file):
-                snippet_rule_fh = open(snippet_rule_file,"r")
-                for line in snippet_rule_fh:
-                    rule_list.append(line)
-                snippet_rule_fh.close()
-            if cluster_xmit and os.path.isfile(cluster_rule_file):
-                cluster_rule_fh = open(cluster_rule_file,"r")
-                for line in cluster_rule_fh:
-                    rule_list.append(line)
-                cluster_rule_fh.close()
-            fsr = FASGuardStixRule(rule_list)
-            stix_rule_fh.write(fsr.toStixXml('High','High'))
-            stix_rule_fh.close()
-
             # Xmit requested rule sets
+            if joined_xmit and os.path.isfile(joined_rule_file):
+                for rule in open(joined_rule_file,'r'):
+                    if re.search(r'alert',rule):
+                        rule_list.append(rule)
+            if snippet_xmit and os.path.isfile(snippet_rule_file):
+                for rule in open(snippet_rule_file,'r'):
+                    if re.search(r'alert',rule):
+                        rule_list.append(rule)
+            if cluster_xmit and os.path.isfile(cluster_rule_file):
+                for rule in open(cluster_rule_file,'r'):
+                    if re.search(r'alert',rule):
+                        rule_list.append(rule)
+
+            fsr = FASGuardStixRule(rule_list)
+            xml = fsr.toStixXml("High","Low")
+            fh = open(ruleDir+'/stix-rules.xml','w')
+            fh.write(xml)
+            fh.close()
         sys.exit(-1)
 
     logger.debug("In file: %s",args.in_file)

@@ -189,7 +189,6 @@ Trie::shortestPrefixString()
 #endif
 }
 #endif
-
 void
 Trie::longestPrefixString()
 {

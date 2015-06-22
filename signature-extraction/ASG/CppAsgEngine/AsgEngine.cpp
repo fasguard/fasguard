@@ -8,14 +8,10 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
-#include <fstream>
 #include "AsgEngine.h"
 #include "Dendrogram.hh"
 #include "RegexExtractorLCSS.hh"
 #include "SuricataRuleMaker.hpp"
-#include "SmlLrgSigExtrct.hh"
-#include "Trie.h"
-//#include "MemoryTrieNodeFactory.h"
 
 using namespace boost::python;
 
@@ -33,14 +29,6 @@ BOOST_PYTHON_MODULE(asg_engine_ext)
 }
 
 namespace logging = boost::log;
-
-Ngram:: Ngram(std::string content, unsigned int pkt_offset,
-              unsigned int pkt_num):
-  m_content(content), m_pkt_offset(pkt_offset), m_pkt_num(pkt_num)
-{}
-
-Ngram::~Ngram()
-{}
 
 AsgEngine::AsgEngine(dict properties, bool debug_flag) :
   m_properties(properties), m_debug(debug_flag)
@@ -184,11 +172,6 @@ AsgEngine::makeCandidateSignatureStringSet()
     }
 }
 
-bool
-cmpStrLen(const std::string& a, const std::string& b)
-{
-  return a.size() < b.size();
-}
 void
 AsgEngine::unsupervisedClustering()
 {
@@ -296,11 +279,6 @@ AsgEngine::unsupervisedClustering()
 
   BloomFilter bf(bf_name,m_blm_frm_mem);
 
-  std::string rule_file =
-    extract<std::string>
-    (m_properties["ASG.SuricataUnsupervisedClusterRuleFile"]);
-  std::ofstream ruleStream(rule_file,std::ios::out | std::ios::app);
-
   SuricataRuleMaker srm(attack_proto_string,"any","any","any",
                         attack_port_string);
 
@@ -333,78 +311,33 @@ AsgEngine::unsupervisedClustering()
        BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
         filt_regex_pieces.size() << std::endl;
 
-       // For signature strings that are substrings of other strings, retain only
-       // innermost string
+       std::vector<std::string>::iterator rp_it = filt_regex_pieces.begin();
 
-       // Sort strings by length
-
-       std::sort(filt_regex_pieces.begin(),
-                 filt_regex_pieces.end(),
-                 cmpStrLen);
-
-       // Create a set
-
-       std::set<std::string> filt_regex_pieces_set(filt_regex_pieces.begin(),
-                                                   filt_regex_pieces.end());
-
-       for(std::vector<std::string>::iterator it = filt_regex_pieces.begin();
-           it != filt_regex_pieces.end();
-           it++)
-         {
-           for(std::vector<std::string>::iterator jt = filt_regex_pieces.begin();
-               jt != filt_regex_pieces.end();
-               jt++)
-             {
-               if((*jt).size() > (*it).size() &&
-                  (*jt).find(*it) != std::string::npos)
-                 {
-                   filt_regex_pieces_set.erase(*jt);
-                 }
-             }
-         }
-
-       std::set<std::string>::iterator rp_it = filt_regex_pieces_set.begin();
-
-       std::vector<std::string> sig_vec;
-       while(rp_it != filt_regex_pieces_set.end())
+       while(rp_it != filt_regex_pieces.end())
          {
            stringstream ss;
-           int boundary = MaxContentBytes-1;
-           std::string sig_hex;
            for(int i=0;i<(*rp_it).size();i++)
              {
                ss << std::hex << std::setw(2) <<
-                 std::setfill('0') << (0xff & (unsigned int)((*rp_it)[i]));
-               if((i != (*rp_it).size()-1) && (i != boundary))
+                 std::setfill('0') << (unsigned int)((*rp_it)[i]);
+               if(i != (*rp_it).size()-1)
                  {
                    ss << " ";
                  }
-               if(i == boundary)
-                 {
-                   BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
-                   sig_hex = ss.str();
-                   sig_vec.push_back(sig_hex);
-                   ss.str("");
-                   boundary += MaxContentBytes;
-                 }
              }
-           // Remainder of string
-           sig_hex = ss.str();
-           if(sig_hex.size() > 0)
-             {
-               sig_vec.push_back(sig_hex);
-               ss.str("");
-             }
-           std::string snort_rule = srm.makeContentRule(sig_vec);
+           BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
+           std::string sig_hex = ss.str();
+
+           std::string snort_rule = srm.makeContentRule(sig_hex);
            BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
-           ruleStream << snort_rule << endl;
+
            rp_it++;
          }
 
 
       string_set_count++;
     }
-  ruleStream.close();
+
 }
 
 std::vector<std::string>
@@ -432,7 +365,7 @@ AsgEngine::filtSigFrags(BloomFilter &bf,
           BOOST_LOG_TRIVIAL(debug)   << "Size of frag_piece: " <<
             (*it).size() << std::endl;
 
-          for(unsigned int i=0;i<=(*it).size()-depth;i++)
+          for(int i=0;i<=(*it).size()-depth;i++)
             {
               ngrams.insert((*it).substr(i,depth));
             }
@@ -564,170 +497,60 @@ AsgEngine::singleAttack()
 
   int string_set_count = 0;
 
-  std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
-    ngram_pair = filtNgrams(bf,pkt_content_list);
-  std::vector<Ngram> filt_regex_pieces =
-    ngram_pair.first;
-
-  std::vector<std::vector<std::string> > ngram_frag_list =
-    ngram_pair.second;
+  std::set<std::string> filt_regex_pieces =
+    filtNgrams(bf,pkt_content_list);
 
   BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
     filt_regex_pieces.size() << std::endl;
 
 
-  std::vector<Ngram>::iterator pc_it = filt_regex_pieces.begin();
-  std::vector<std::vector<std::string> >::iterator pcre_it =
-    ngram_frag_list.begin();
-  std::set<std::string> seen_already;
-  std::set<std::string> pcre_seen_already;
-
-  // We append rules to the file given by the property
-  std::string rule_file =
-    extract<std::string>(m_properties["ASG.SuricataRuleFile"]);
-  std::string pcre_rule_file =
-    extract<std::string>(m_properties["ASG.SuricataPcreRuleFile"]);
-
-  std::ofstream ruleStream(rule_file,std::ios::out | std::ios::app);
-  std::ofstream pcreRuleStream(pcre_rule_file,std::ios::out | std::ios::app);
+  std::set<std::string>::iterator pc_it = filt_regex_pieces.begin();
 
   while(pc_it != filt_regex_pieces.end())
     {
       stringstream ss;
-      std::string cur_string = (*pc_it).getContent();
-      if(seen_already.find(cur_string) != seen_already.end())
+      for(int i=0;i<(*pc_it).size();i++)
         {
-          pc_it++;
-          continue;
+          ss << std::hex << std::setw(2) <<
+            std::setfill('0') << (unsigned int)((*pc_it)[i]);
+          if(i != (*pc_it).size()-1)
+            {
+              ss << " ";
+            }
         }
-      else if (cur_string.size() < m_min_depth)
-        {
-          pc_it++;
-          continue;
-        }
-      else
-        {
-          seen_already.insert(cur_string);
-        }
-      std::string sig_hex = ngram2ContentString(cur_string);
-      std::vector<std::string> sig_vec;
-      sig_vec.push_back(sig_hex);
-      std::string snort_rule = srm.makeContentRule(sig_vec);
+      BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
+      std::string sig_hex = ss.str();
+
+      std::string snort_rule = srm.makeContentRule(sig_hex);
       BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
-      ruleStream << snort_rule << endl;
+
       pc_it++;
     }
-  ruleStream.close();
-  // while(pcre_it != ngram_frag_list.end())
-  //   {
-  //     std::vector<std::string>::iterator ng_it = (*pcre_it).begin();
-  //     while(ng_it != (*pcre_it).end())
-  //    {
-  //      std::string sig_hex = ngram2ContentString(*ng_it);
-  //      if(pcre_seen_already.find(sig_hex) != pcre_seen_already.end())
-  //        {
-  //          ng_it++;
-  //          continue;
-  //        }
-  //      else
-  //        {
-  //          pcre_seen_already.insert(sig_hex);
-  //        }
-  //      std::vector<std::string> sig_vec;
-  //      sig_vec.push_back(sig_hex);
-  //      std::string snort_rule = srm.makeContentRule(sig_vec);
-  //      BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
-
-  //      pcreRuleStream << snort_rule << endl;
-  //      ng_it++;
-  //    }
-
-  //     pcre_it++;
-  //   }
-
-
-  // Collect all fragments into a ste
-
-  std::set<std::string> ngram_frag_set;
-
-  while(pcre_it != ngram_frag_list.end())
-    {
-      std::vector<std::string>::iterator ng_it = (*pcre_it).begin();
-      while(ng_it != (*pcre_it).end())
-        {
-          ngram_frag_set.insert(*ng_it);
-
-          ng_it++;
-        }
-
-      pcre_it++;
-    }
-
-  SmlLrgSigExtrct slse(ngram_frag_set);
-
-  boost::shared_ptr<std::set<std::string> > short_strings_ptr =
-    slse.smallStringSet();
-
-  std::set<std::string>::iterator str_it = (*short_strings_ptr).begin();
-
-  while(str_it != (*short_strings_ptr).end())
-    {
-      std::string ngram = *str_it;
-      std::string sig_hex = ngram2ContentString(ngram);
-      std::vector<std::string> sig_vec;
-      sig_vec.push_back(sig_hex);
-      std::string snort_rule = srm.makeContentRule(sig_vec);
-      BOOST_LOG_TRIVIAL(debug) << snort_rule << endl;
-
-      pcreRuleStream << snort_rule << endl;
-
-      str_it++;
-    }
-
-  pcreRuleStream.close();
 }
 
-std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
+std::set<std::string>
 AsgEngine::filtNgrams(BloomFilter &bf,
                       std::vector<std::string> &pkts)
 {
   std::set<std::string> ngrams;
-  std::vector<Ngram> ngram_result;
-  std::vector<std::vector<std::string> > ngram_accum_result;
 
   BOOST_LOG_TRIVIAL(debug)   << "In filtNgrams, num pkt content: " <<
     pkts.size() << std::endl;
 
   std::vector<std::string>::iterator it = pkts.begin();
 
-  unsigned int pkt_num = 1;
   while(it != pkts.end())
     {
       if((*it).size() < m_max_depth)
         {
           it++;
-          pkt_num++;
           continue;
         }
 
-      // We collect ngrams for single packets and return only those ngrams
-      // whose occurance is a local frequency maximum
-
-      std::vector<Ngram> pkt_ngrams;
-      std::vector<std::string> pkt_ngram_strings;
-
-
       // We take only the shortest string that doesn't get filtered
-      int total_ngram = 0;
-      int svv_ngram = 0;
-
-      //std::cout << "Packet " << pkt_num << std::endl;
-      //std::cout.flush();
 
       for(int i=0;i<=(*it).size()-m_min_depth;i++)
         {
-          //std::cout << "Offset " << i << std::endl;
-          //std::cout.flush();
           int local_max_depth = (i+m_max_depth < (*it).size())?
             m_max_depth:((*it).size()-i);
           for(int depth=m_min_depth;depth<=local_max_depth;depth++)
@@ -737,107 +560,14 @@ AsgEngine::filtNgrams(BloomFilter &bf,
               if(!bf.contains((uint8_t *)(ngram.data()),ngram.size()))
                 {
                   ngrams.insert(ngram);
-                  Ngram ngram_obj(ngram,i,pkt_num);
-                  pkt_ngrams.push_back(ngram_obj);
-                  pkt_ngram_strings.push_back(ngram);
-                  svv_ngram++;
-                  //break;
+                  break;
                 }
-              total_ngram++;
             }
         }
-      BOOST_LOG_TRIVIAL(debug)   << "Total ngram: " <<  total_ngram <<
-        " Surviving ngram: " << svv_ngram << std::endl;
 
-      ngram_accum_result.push_back(pkt_ngram_strings);
-      findLocalMaxima(pkt_ngrams,ngram_result,*it,pkt_num);
       it++;
-      pkt_num++;
-    }
-  BOOST_LOG_TRIVIAL(debug)   << "In filtNgrams, before return"
-                             << std::endl;
-  std::cout << "In filtNgrams, before return" << std::endl;
-
-  std::cout.flush();
-
-  return  std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
-    (ngram_result,ngram_accum_result);
-}
-
-void
-AsgEngine::findLocalMaxima(std::vector<Ngram> &pkt_ngrams,
-                           std::vector<Ngram> &ngram_result,
-                           std::string pkt_content,
-                           unsigned int pkt_num)
-{
-  std::vector<unsigned int> histo(pkt_content.size(),0);
-
-  // Make histo of number of ngrams that cover each packet position
-
-  for(std::vector<Ngram>::iterator pkt_ngram_it = pkt_ngrams.begin();
-      pkt_ngram_it != pkt_ngrams.end();
-      pkt_ngram_it++)
-    {
-      for(int i = (*pkt_ngram_it).getPktOffset();
-          i < (*pkt_ngram_it).getPktOffset() +
-            (*pkt_ngram_it).getContent().size();
-          i++)
-        {
-          histo[i] += 1;
-        }
     }
 
-  // Now, find and report local maxima
 
-  unsigned int local_max_cnt = 0;
-  unsigned int start_run = 0;
-  bool in_run = false;
-
-  for(int i=0;i<pkt_content.size();i++)
-    {
-      if(histo[i] > local_max_cnt)
-        {
-          local_max_cnt = histo[i];
-          start_run = i;
-          in_run = true;
-          BOOST_LOG_TRIVIAL(debug)   << "Up to: " << local_max_cnt  <<
-            " at " << i <<
-            std::endl;
-
-        }
-      else if(histo[i] < local_max_cnt)
-        {
-          if(in_run)
-            {
-              // Make a new entry in ngram_result
-              Ngram ngram(pkt_content.substr(start_run,(i-start_run)),
-                      i,pkt_num);
-              ngram_result.push_back(ngram);
-              in_run = false;
-            }
-          local_max_cnt = histo[i];
-          BOOST_LOG_TRIVIAL(debug)   << "Down to: " << local_max_cnt  <<
-            " at " << i <<
-            std::endl;
-          start_run = i;
-        }
-    }
-}
-
-std::string
-AsgEngine::ngram2ContentString(std::string &ngram)
-{
-  std::stringstream ss;
-  for(int i=0;i<ngram.size();i++)
-        {
-          ss << std::hex << std::setw(2) <<
-            std::setfill('0') << (0xff & (unsigned int)(ngram[i]));
-          if(i != ngram.size()-1)
-            {
-              ss << " ";
-            }
-        }
-  BOOST_LOG_TRIVIAL(debug) << ss.str() << endl;
-  std::string sig_hex = ss.str();
-  return sig_hex;
+  return ngrams;
 }

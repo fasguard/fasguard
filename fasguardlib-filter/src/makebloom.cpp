@@ -43,7 +43,6 @@ main(int argc, char *argv[])
   int port_num;
   int min_depth;
   int max_depth;
-  bool merge_flag;
   std::string out_file;
 
   po::variables_map vm;
@@ -52,9 +51,7 @@ main(int argc, char *argv[])
     {
       po::options_description desc("");
       desc.add_options()
-        ("help,h", "produce help message")
-        ("merge,m", po::bool_switch(&merge_flag)->default_value(false),
-         "Mode for merging two Bloom filters into one")
+        ("help", "produce help message")
         ("prob-fa", po::value<double>(&pfa)->default_value(0.00001),
          "desired probability of false alarm")
         ("num-insertions,n",
@@ -151,14 +148,6 @@ main(int argc, char *argv[])
 
   // fasguard::bloom_filter_statistics
   //   *bfs_ptr = new fasguard::bloom_filter_statistics();
-
-  if(merge_flag)
-    {
-      BloomFilter bf1((vm["pcap-file"].as< vector<string> >())[0],false);
-      BloomFilter bf2(vm["pcap-file"].as< vector<string> >()[1],false);
-      bf1.WriteCombined(bf2,out_file);
-      return 0;
-    }
 
   BloomFilter bf(num_insertions,pfa,ip_proto,port_num,min_depth,
                  max_depth);

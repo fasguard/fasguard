@@ -17,17 +17,18 @@
     @param[in] packet The packet itself, starting at the layer 2 header.
     @return The length of the layer 2 header.
 */
-typedef size_t layer2_hlen_t(
+typedef size_t (*layer2_hlen_t)(
     size_t len,
     uint8_t const * packet);
 
-/** @brief get layer 2 header length for ethernet. */
-layer2_hlen_t layer2_hlen_ethernet;
+/** @brief #layer2_hlen_t for ethernet. */
+size_t layer2_hlen_ethernet(
+    size_t len,
+    uint8_t const * packet);
 
-/** @brief get layer 2 header length when no layer 2 header at all. */
-layer2_hlen_t layer2_hlen_raw;
-
-/** @brief get layer 2 header length for Linux "cooked" header */
-layer2_hlen_t layer2_hlen_linux_cooked;
+/** @brief #layer2_hlen_t for no layer 2 header at all. */
+size_t layer2_hlen_raw(
+    size_t len,
+    uint8_t const * packet);
 
 #endif

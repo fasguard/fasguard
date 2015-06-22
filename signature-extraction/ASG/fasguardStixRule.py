@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import re
+import StringIO
 from stix.core import STIXPackage
 from stix.indicator import Indicator
 from stix.ttp import TTP
@@ -17,7 +18,7 @@ class FASGuardStixRule:
     This class takes a list of Snort rules from the ASG and produces a
     FASGuard/STIX format file for transmission via TAXII.
     """
-    def __init__(self, rule_list):
+    def __init__(self, rule_list=[]):
         """
         Constructor.
 
@@ -93,7 +94,28 @@ class FASGuardStixRule:
         stix_package = STIXPackage.from_dict(stixDict)
         stix_xml = stix_package.to_xml()
         return stix_xml
+    def parseXML(self,xml_string):
+        """
+        This method takes a STIX/CybOX XML string and extracts the list of
+        rules which it stores in ruleList
 
+        Arguments:
+
+        xml_string - XML string in STIX/CybOX format containing rules.
+
+        Returns:
+
+        Rule list
+        """
+        sio = StringIO.StringIO(xml_string)
+        stix_package = STIXPackage.from_xml(sio)
+        stix_dict = stix_package.to_dict()
+        rules = []
+        print stix_dict['indicators'][0]['test_mechanisms'][0]['rules']
+        for rule in stix_dict['indicators'][0]['test_mechanisms'][0]['rules']:
+            rules.append(rule['value'])
+        self.ruleList = rules
+        return rules
 if __name__ == '__main__':
     FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging_level  = logging.DEBUG
@@ -114,3 +136,9 @@ if __name__ == '__main__':
     fsr = FASGuardStixRule(rule_list)
     xml = fsr.toStixXml("High","Low")
     print 'xml',xml
+    fsr = FASGuardStixRule()
+    rule_list = fsr.parseXML(xml)
+    cnt = 0
+    for rule in rule_list:
+        print 'Rule ',cnt,rule
+        cnt += 1
