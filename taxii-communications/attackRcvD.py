@@ -8,7 +8,7 @@ DESCRIPTION
 
 We set up a django server to receive STIX XML flags and place
 them into a sqlite database. We also set up a trigger that sends a signal to
-the ASG moduel when a new entry is placed into the sqlite database.
+the ASG module when a new entry is placed into the sqlite database.
 """
 
 import logging
