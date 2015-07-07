@@ -2,8 +2,39 @@
 #define BLOOM_FILTER_HH
 #include <vector>
 #include <fstream>
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+#include "lru_cache_using_std.h"
 #include "BenignNgramStorage.hh"
 
+/**
+ * @brief Stores data for caching of Bloom hash lookup.
+ */
+class HashVals
+{
+public:
+  HashVals(boost::shared_ptr<std::vector<uint64_t> > bit_indeces);
+protected:
+  boost::shared_ptr<std::vector<uint64_t> > m_bit_indeces;
+};
+
+/**
+ * @brief Functor to pass to hash
+ */
+class CalcBitIndeces
+{
+public:
+  CalcBitIndeces(size_t num_hash_func, uint64_t filter_size_in_bits);
+  CalcBitIndeces()
+  {}
+  boost::shared_ptr<std::vector<uint64_t> >
+  operator()(const std::string &ngram);
+protected:
+  size_t m_num_hash_func;
+  uint64_t m_filter_size_in_bits;
+};
+//boost::shared_ptr<std::vector<uint64_t> >
+//calcBitIndeces(std::string ngram);
 /**
  * @brief Implementation of Bloom filter for ngrams.
  *
@@ -38,7 +69,7 @@ public:
    * @param from_mem_p If true, Bloom filter data is loaded in memory. If
    *    false, file is accesed for each Bloom filter bit using fseek.
    */
-  BloomFilter(std::string &filename,bool from_mem_p);
+  BloomFilter(const std::string &filename,bool from_mem_p);
   /**
    * Destructor.
    */
@@ -63,9 +94,26 @@ public:
    * @param filename Name of file used for persistence.
    */
   virtual bool flush(std::string filename);
+
+  /**
+   * Returns the first value in the Bloom filter that's above the input value.
+   * Used only for testing.
+   * @param val Input value to compare to.
+   * @return First value above val.
+   */
+  unsigned int entryAbove(unsigned int val);
+
+  /**
+   * Writes out a Bloom filter that is a combination of the current BloomFilter
+   * and a BloomFilter given as a first argument.
+   * @param other Other Bloom filter to combine with.
+   * @param output_file Filename into which result Bloom Filter will be written.
+   */
+  void WriteCombined(BloomFilter &other,std::string output_file);
   static const unsigned int MAX_HASHES = 512;
   static const unsigned int CHAR_SIZE_BITS = 8;
   static const uint32_t HeaderLengthInBytes = 4096;
+  static const unsigned int NUM_CACHE_ENTRIES = 10000;
 
   /**
      @brief Type to use for the length (in bits) of a bloom filter
@@ -93,6 +141,12 @@ protected:
   bool m_blm_frm_mem;
 
   std::fstream m_bf_stream;
+
+  boost::shared_ptr<lru_cache_using_std<
+                      CalcBitIndeces,
+                      std::string,boost::shared_ptr<std::vector<uint64_t> >,
+                      boost::unordered_map> > m_cache;
+  CalcBitIndeces m_calc_bit_indeces;
 
 };
 #endif

@@ -49,8 +49,8 @@ class AttackPacket:
         if link_type == 'ethernet':
             eth = dpkt.ethernet.Ethernet(payload)
             self.logger.debug('In AttackPacket constructor')
-            self.logger.debug('Raw packet: %s',payload.encode('hex'))
-            self.logger.debug('eth=%s',str(eth))
+            self.logger.debug('Raw packet length: %d',len(payload))
+            #self.logger.debug('eth=%s',str(eth))
             #print eth
             ip = eth.data
         elif link_type == 'raw':
@@ -77,8 +77,10 @@ class AttackPacket:
             self.payload = udp.data
         else:
             self.logger.error('Bad proto: %d', ip.p)
-            sys.exit(-1)
-
+            #sys.exit(-1)
+    def handledService(self):
+        return (self.protocol == dpkt.ip.IP_PROTO_TCP or
+                self.protocol == dpkt.ip.IP_PROTO_TCP)
 
 class AttackInstance:
     """
@@ -203,7 +205,8 @@ class DetectorEvent:
                     for i in range(len(prob_of_attack_list)):
                         ap = AttackPacket(prob_of_attack_list[i], 'ethernet',
                                           time_stamps[i], payloads[i])
-                        packet_list.append(ap)
+                        if ap.handledService():
+                            packet_list.append(ap)
 
                     attack_instance = AttackInstance(packet_list)
                     self.logger.debug('Adding AttackInstance %d', instance_num)
@@ -433,10 +436,42 @@ class DetectorEvent:
 
             observable_list = r_obs['related_observables']['observables']
             packet_list = []
+            tcp_histo = {}
+            udp_histo = {}
+            num_tcp = 0
+            num_udp = 0
             for obs in observable_list:
                 ap = self.makeAttackPacket(obs)
-                packet_list.append(ap)
-            ai = AttackInstance(packet_list)
+                if ap.handledService():
+                    packet_list.append(ap)
+                    if ap.protocol == dpkt.ip.IP_PROTO_TCP:
+                        num_tcp += 1
+                        self.logger.debug('TCP port %d',ap.Dport)
+                        tcp_histo[ap.Dport] = tcp_histo.get(ap.Dport,0) + 1
+                    elif ap.protocol == dpkt.ip.IP_PROTO_UDP:
+                        num_udp += 1
+                        udp_histo[ap.Dport] = udp_histo.get(ap.Dport,0) + 1
+            fltrd_pkt_lst = []
+            if num_tcp > num_udp:
+                v = list(tcp_histo.values())
+                k = list(tcp_histo.keys())
+                max_port = k[v.index(max(v))]
+            else:
+                v = list(udp_histo.values())
+                k = list(udp_histo.keys())
+                max_port = k[v.index(max(v))]
+            proto = (dpkt.ip.IP_PROTO_TCP if num_tcp > num_udp
+                     else dpkt.ip.IP_PROTO_UDP)
+            for key in tcp_histo:
+                self.logger.debug('port %d count %d',key,tcp_histo[key])
+            for pkt in packet_list:
+                if pkt.protocol == proto and pkt.Dport == max_port:
+                    fltrd_pkt_lst.append(pkt)
+            self.logger.debug('Chosen proto %d, chosen port %d', proto,
+                              max_port)
+            # We create the attack from the most frequent protocol/service
+            # instance. We histogram first.
+            ai = AttackInstance(fltrd_pkt_lst)
             self.attackInstanceList.append(ai)
     def makeAttackPacket(self, observable):
         """
@@ -467,7 +502,7 @@ class DetectorEvent:
             sys.exit(-1)
         base64_packet = (observable['observable']['object']['properties']
                          ['raw_artifact'])
-        self.logger.debug('base64_packet = %s',base64_packet)
+        #self.logger.debug('base64_packet = %s',base64_packet)
         binary_packet = base64.b64decode(base64_packet)
         # eth = dpkt.ethernet.Ethernet(binary_packet)
         # #print eth

@@ -2,7 +2,7 @@ CPath=$(PBGMATHHOME)/mops/src/class:$(PBGMATHHOME)/mops/lib/java-getopt-1.0.9.ja
 CC=gcc
 CC1=../../mops/rc/cc1
 CPP=/usr/bin/cpp
-CXXFLAGS = -std=c++11 -I. -g
+CXXFLAGS = -fPIC -std=c++11 -I. -g
 
 # The "real" mfsa, that is supposed to detect as error if we get to
 # the "executed a command while in unsafe-input mode"
@@ -40,8 +40,12 @@ all: makebloom
 
 
 #makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
-makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o MurmurHash3.o BenignNgramStorage.o BloomFilter.o
-	$(CC) -o $@ $^ -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap
+#makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o  BenignNgramStorage.o BloomFilter.o
+makebloom: makebloom.o  PcapFileEngine.o BloomPacketEngine.o libBloom.so
+	$(CC) -o $@ $^ -L. -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap -lBloom
+
+libBloom.so: MurmurHash3.o BloomFilter.o BenignNgramStorage.o filter.o
+	$(CC) -shared -fPIC -o $@ $^
 
 
 # make executables

@@ -12,12 +12,46 @@
 #include "BloomFilter.hh"
 
 /**
+ * This class is for a single ngram. It contains both the string that
+ * constitutes the content of the ngram as well as the location within the
+ * packet where the ngram occurs and an id for the packet.
+ */
+class Ngram
+{
+ public:
+  /**
+   * Constructor.
+   * @param content The string with the content of the ngram.
+   * @param pkt_offset The offset within the packet where the ngram is located.
+   * @param pkt_num The number of the packet within the attack where this ngram
+   *    is found.
+   */
+  Ngram(std::string content, unsigned int pkt_offset, unsigned int pkt_num);
+  ~Ngram();
+  unsigned int
+    getPktOffset() const
+  {
+    return m_pkt_offset;
+  }
+  const std::string &
+    getContent() const
+  {
+    return m_content;
+  }
+ protected:
+  std::string m_content;
+  unsigned int m_pkt_offset;
+  unsigned int m_pkt_num;
+};
+
+/**
  * This class performs the actual work in extracting signatures from a detector
  * report. Each step is invoked from the corresponding Python AsgEngine class.
  */
 class AsgEngine
 {
  public:
+  static const int MaxContentBytes = 255;
   /**
    * Constructor.
    * @param properties Properties dictionary passed down by Python code.
@@ -100,9 +134,18 @@ class AsgEngine
    */
   std::vector<std::string>
     filtSigFrags(BloomFilter &bf, std::vector<std::string> &frag_pieces);
-  std::set<std::string>
+  std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
     filtNgrams(BloomFilter &bf,
                std::vector<std::string> &pkts);
+
+  void
+    findLocalMaxima(std::vector<Ngram> &pkt_ngrams,
+                    std::vector<Ngram> &ngram_result,
+                    std::string pkt_content,
+                    unsigned int pkt_num);
+
+  std::string
+    ngram2ContentString(std::string &ngram);
 
  private:
   DetectorReport m_detector_report;

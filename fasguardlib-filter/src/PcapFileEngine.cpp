@@ -8,12 +8,17 @@ namespace fasguard
   PcapFileEngine::PcapFileEngine(const std::vector<std::string> pcap_filenames,
                                  BloomFilter &b_filter,int min_depth,
                                  int max_depth) :
-    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth)
+    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth,true),
+    m_bytes_processed(0)
   {
     for (const std::string &p_file : pcap_filenames)
       {
         fillBloom(p_file);
       }
+
+    // Record number of bytes inserted into Bloom Filter
+
+    m_b_filter.setNumBytesProcessed(m_bytes_processed);
   }
 
   void PcapFileEngine::fillBloom(std::string pcap_filename)
@@ -60,7 +65,8 @@ PcapFileEngine::processFile(const std::string& filename)
 
     // get the next packet from Pcap
     int rv = getNextPacket(p, payload, payload_len);
-    // BOOST_LOG_TRIVIAL(debug) << "Got next packet" << std::endl;
+    // BOOST_LOG_TRIVIAL(debug) << "Got next packet, rv = " <<
+    //   rv << std::endl;
 
     static unsigned int num_pkts = 0;
 
@@ -98,11 +104,11 @@ PcapFileEngine::processFile(const std::string& filename)
                      payload_len);
 
     // accumulate bytes_processed with the length of the current payload
-    bytes_processed += payload_len;
-    if(bytes_processed > next_report_bytes)
+    m_bytes_processed += payload_len;
+    if(m_bytes_processed > next_report_bytes)
       {
         BOOST_LOG_TRIVIAL(info)
-          << "Bytes Processed: " << bytes_processed << std::endl;
+          << "Bytes Processed: " << m_bytes_processed << std::endl;
         next_report_bytes += BytesProcessedDelta;
       }
 
@@ -133,7 +139,8 @@ PcapFileEngine::processFile(const std::string& filename)
   // defined by the pcap library
   char errbuf[PCAP_ERRBUF_SIZE];
 
-  std::cout << "Opening pcap savefile: " << dump << std::endl;
+  BOOST_LOG_TRIVIAL(debug)
+    << "Opening pcap savefile: " << dump << std::endl;
 
   // open the dump file
   p = pcap_open_offline(dump.c_str(),
@@ -335,13 +342,33 @@ PcapFileEngine::extractPayload(
   uint16_t l3_proto = ntohs(tmp16);
 
   // if the layer-3 protocol is not IP, we need to go to the next packet
-  if(l3_proto != ETHERTYPE_IP)
+  if(l3_proto != ETHERTYPE_IP && l3_proto != ETHERTYPE_VLAN)
   {
+    BOOST_LOG_TRIVIAL(error) << "Warning: not ETHERTYPE_IP or ETHERTYPE_VLAN "
+                             << std::hex << l3_proto << std::dec << std::endl;
     return(false);
   }
 
   // for convnience, we'll create a pointer to the start of the IP packet
-  const u_char* ip_pkt = pkt + 2*ETHER_ADDR_LEN + 2;
+  const u_char* ip_pkt;
+  if(l3_proto == ETHERTYPE_IP)
+    {
+      ip_pkt = pkt + 2*ETHER_ADDR_LEN + 2;
+    }
+  else
+    {
+      std::copy(pkt + 2*ETHER_ADDR_LEN+4, pkt + 2*ETHER_ADDR_LEN + 8,
+            reinterpret_cast<u_char*>(&tmp16));
+      l3_proto = ntohs(tmp16);
+
+      if(l3_proto != ETHERTYPE_IP)
+        {
+          BOOST_LOG_TRIVIAL(error) << "Warning: not ETHERTYPE_IP "
+                             << std::hex << l3_proto << std::dec << std::endl;
+          return(false);
+        }
+      ip_pkt = pkt + 2*ETHER_ADDR_LEN + 6;
+    }
 
   // now we'll read out the IP header length and version
   uint8_t ip_vhl = 0;
@@ -391,6 +418,7 @@ PcapFileEngine::extractPayload(
   // if the IPv4 datagram is fragmented, skip
   if(1 == (((*(ip_pkt + 6)) & 0x20) >> 5))
   {
+    BOOST_LOG_TRIVIAL(error) << "Datagram fragmented" << std::endl;
     return(false);
   }
 
@@ -406,6 +434,7 @@ PcapFileEngine::extractPayload(
   // this expression shouldn't ever evaluate to 'true'
   if(0 != (tmp16 & htons(0x1FFF)))
   {
+     BOOST_LOG_TRIVIAL(error) << "Last fragment" << std::endl;
     return(false);
   }
 
@@ -478,6 +507,7 @@ PcapFileEngine::extractPayload(
     }
     default: // not TCP or UDP
     {
+      BOOST_LOG_TRIVIAL(error) << "Not TCP or UDP" << std::endl;
       return(false);
     }
   }
