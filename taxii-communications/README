@@ -1,0 +1,7 @@
+This directory includes agents for transmitting and receiving FASGuard/STIX attack
+reports and FASGuard/STIX rule transmitting/receiving as well as injecting rules
+into a running Snort. The relevant Python code includes:
+
+attackRcvD.py,attackXmitD.py - Attack report transmit and receive.
+ruleRcvD.py,ruleXmitD.py - Rule transmit and receive.
+RuleInjector.py - Sends signal to Suricata to cause rule re-loading.
