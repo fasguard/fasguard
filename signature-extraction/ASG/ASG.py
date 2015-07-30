@@ -111,15 +111,15 @@ def setup():
             # Xmit requested rule sets
             if joined_xmit and os.path.isfile(joined_rule_file):
                 for rule in open(joined_rule_file,'r'):
-                    if re.search(r'alert',rule):
+                    if re.search(r'(pass|drop|reject|alert)',rule):
                         rule_list.append(rule)
             if snippet_xmit and os.path.isfile(snippet_rule_file):
                 for rule in open(snippet_rule_file,'r'):
-                    if re.search(r'alert',rule):
+                    if re.search(r'(pass|drop|reject|alert)',rule):
                         rule_list.append(rule)
             if cluster_xmit and os.path.isfile(cluster_rule_file):
                 for rule in open(cluster_rule_file,'r'):
-                    if re.search(r'alert',rule):
+                    if re.search(r'(pass|drop|reject|alert)',rule):
                         rule_list.append(rule)
 
             fsr = FASGuardStixRule(rule_list)
