@@ -13,13 +13,14 @@ import os
 import os.path
 import argparse
 import yaml
+import signal
 from subprocess import check_output
 from stixFromDb import StixFromDb
 from fasguardStixRule import FASGuardStixRule
 from properties.envProperties import EnvProperties
 
 def getSuricataConfFile():
-    paths=["/etc/suricata/suricata.yaml","usr/local/etc/suricata/suricata.yaml"]
+    paths=["/etc/suricata/suricata.yaml","/usr/local/etc/suricata/suricata.yaml"]
     for path in paths:
         if os.path.isfile(path):
             return path
@@ -83,7 +84,7 @@ def updateRules(rules):
             writeFASGuardRules(rules, rulesDir)
             pid = getSuricataPid(conf)
             if pid is not None:
-                os.kill(pid, SIGUSR2)
+                os.kill(pid, signal.SIGUSR2)
 
 def setup():
     parser = argparse.ArgumentParser(
@@ -127,7 +128,7 @@ def setup():
         fh.close()
         fsr.parseXML(xml)
         if fsr.ruleList is not None:
-            updateRules(fst.ruleList)
+            updateRules(fsr.ruleList)
 
 if __name__ == '__main__':
     setup()
