@@ -24,6 +24,8 @@ import math
 import calendar
 import time
 import dpkt
+import binascii
+pkt_cnt = 0
 
 class AttackPacket:
     """
@@ -39,8 +41,9 @@ class AttackPacket:
     time_stamp - The pcap time stamp of the packet
     payload - Packet payload.
     """
-
+    MaxPortNumber = 5000
     def __init__(self, prob_of_attack, link_type, time_stamp, payload):
+        global pkt_cnt
         self.logger = logging.getLogger('simple_example')
         self.probAttack = prob_of_attack
         self.linkType = link_type
@@ -50,6 +53,7 @@ class AttackPacket:
             eth = dpkt.ethernet.Ethernet(payload)
             self.logger.debug('In AttackPacket constructor')
             self.logger.debug('Raw packet length: %d',len(payload))
+
             #self.logger.debug('eth=%s',str(eth))
             #print eth
             ip = eth.data
@@ -68,6 +72,12 @@ class AttackPacket:
             self.Dport = tcp.dport
             self.Sport = tcp.sport
             self.payload = tcp.data
+            fh = open('/tmp/pkt'+str(pkt_cnt)+'.txt','w')
+            pkt_cnt += 1
+            hex_txt = repr(binascii.b2a_hex(self.payload))
+            fh.write(hex_txt)
+            fh.close()
+
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             udp = ip.data
             self.logger.debug('UDP destination port: %d',udp.dport)
@@ -79,8 +89,10 @@ class AttackPacket:
             self.logger.error('Bad proto: %d', ip.p)
             #sys.exit(-1)
     def handledService(self):
-        return (self.protocol == dpkt.ip.IP_PROTO_TCP or
+        self.logger.debug('Dport = %d',self.Dport)
+        return ((self.protocol == dpkt.ip.IP_PROTO_TCP or
                 self.protocol == dpkt.ip.IP_PROTO_TCP)
+                and (self.Dport < AttackPacket.MaxPortNumber))
 
 class AttackInstance:
     """
