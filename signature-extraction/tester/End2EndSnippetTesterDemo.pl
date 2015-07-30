@@ -66,7 +66,7 @@ if(!$pid1)
     chdir '../../taxii-communications';
     #sleep SLEEP_TIME;
 
-    `xterm -title 'Attack Xmit' -hold -geometry 80x20+10+10 -fa 'Monospace' -fs 12 -e ./attackXmitD.py -d`;
+    `xterm -title 'Attack Xmit' -hold -geometry 40x20+10+10 -fa 'Monospace' -fs 12 -e ./attackXmitD.py -d`;
 }
 else
 {
@@ -75,7 +75,7 @@ else
     {
         chdir '../../taxii-communications';
         sleep SLEEP_TIME;
-    `xterm -title 'Attack Rcv' -hold -geometry 80x20+900+10  -fa 'Monospace' -fs 12 -e ./attackRcvD.py -d`;
+    `xterm -title 'Attack Rcv' -hold -geometry 40x20+500+10  -fa 'Monospace' -fs 12 -e ./attackRcvD.py -d`;
     }
     else
     {
@@ -84,7 +84,7 @@ else
         {
             chdir '../ASG';
             sleep 2*SLEEP_TIME;
-            `xterm -title 'ASG' -hold -geometry 80x20+10+500  -fa 'Monospace' -fs 12 -e "./ASG.py -d -s 2>&1 | tee /tmp/asg.log"`;
+            `xterm -title 'ASG' -hold -geometry 40x20+10+500  -fa 'Monospace' -fs 12 -e "./ASG.py -d -s -p asg-snippet.properties 2>&1 | tee /tmp/asg.log"`;
         }
         else
         {
@@ -94,7 +94,7 @@ else
                 chdir '../../taxii-communications';
                 sleep 3*SLEEP_TIME;
 
-                `xterm -title 'Rule Xmit' -hold -geometry 80x20+900+500 -fa 'Monospace' -fs 12 -e ./ruleXmitD.py -d`;
+                `xterm -title 'Rule Xmit' -hold -geometry 40x20+500+500 -fa 'Monospace' -fs 12 -e ./ruleXmitD.py -d`;
             }
             else
             {
@@ -103,14 +103,14 @@ else
                 {
                     chdir '../../taxii-communications';
                     sleep 4*SLEEP_TIME;
-                    `xterm -title 'Rule Rcv' -hold -geometry 80x20+10+1400 -fa 'Monospace' -fs 12 -e ./ruleRcvD.py -d`;
+                    `xterm -title 'Rule Rcv' -hold -geometry 40x20+10+1400 -fa 'Monospace' -fs 12 -e ./ruleRcvD.py -d`;
 
                 }
                 else
                 {
                     chdir '../../taxii-communications';
                     sleep 5*SLEEP_TIME;
-                    `xterm -title 'Rule Inject' -hold -geometry 80x20+900+1400 -fa 'Monospace' -fs 12 -e ./RuleInjector.py -d`;
+                    `xterm -title 'Rule Inject' -hold -geometry 40x20+500+1400 -fa 'Monospace' -fs 12 -e ./RuleInjector.py -d`;
 
                 }
             }

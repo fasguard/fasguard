@@ -84,7 +84,7 @@ else
         {
             chdir '../ASG';
             sleep 2*SLEEP_TIME;
-            `xterm -title 'ASG' -hold -geometry 80x20+10+500  -fa 'Monospace' -fs 12 -e "./ASG.py -d -s 2>&1 | tee /tmp/asg.log"`;
+            `xterm -title 'ASG' -hold -geometry 80x20+10+500  -fa 'Monospace' -fs 12 -e "./ASG.py -d -s -p asg-snippet.properties 2>&1 | tee /tmp/asg.log"`;
         }
         else
         {
