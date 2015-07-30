@@ -5,9 +5,11 @@
 unsigned int SuricataRuleMaker::sid_cnt =
   SuricataRuleMaker::SnortCustomRuleOffset;
 
-SuricataRuleMaker::SuricataRuleMaker(std::string protocol, std::string ip1,
-                                     std::string port1,std::string ip2,
-                                     std::string port2) : m_protocol(protocol),
+SuricataRuleMaker::SuricataRuleMaker(std::string action, std::string protocol,
+                                     std::string ip1, std::string port1,
+                                     std::string ip2,
+                                     std::string port2) : m_action(action),
+                                                          m_protocol(protocol),
                                                           m_ip1(ip1),
                                                           m_port1(port1),
                                                           m_ip2(ip2),
@@ -31,8 +33,8 @@ SuricataRuleMaker::makeContentRule(std::vector<std::string> &sig_vec,
       content_vec.push_back("|"+(*sit)+"|");
       sit++;
     }
-  std::string rule_header = "alert "+m_protocol+" "+m_ip1+" "+m_port1+" -> "+
-    m_ip2+" "+m_port2+" ";
+  std::string rule_header = m_action +" "+m_protocol+" "+m_ip1+" "+m_port1+
+    " -> "+ m_ip2+" "+m_port2+" ";
   std::ostringstream ost;
   ost << sid;
   std::string sid_str = ost.str();
@@ -57,7 +59,8 @@ std::string
 SuricataRuleMaker::makePcreRule(std::vector<std::string> &ngram_frags,
                                 unsigned int sid, unsigned int rev)
 {
-  std::string rule_header = "alert "+m_protocol+" "+m_ip1+" "+m_port1+" -> "+
+  std::string rule_header = m_action+" "+m_protocol+" "+m_ip1+" "+m_port1+
+    " -> "+
     m_ip2+" "+m_port2+" ";
   std::ostringstream ost;
   ost << sid;

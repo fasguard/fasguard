@@ -20,14 +20,16 @@ public:
   /**
    * Constructor. Fields common to all rules to be generated are intialized
    * here.
+   * @param action This is the action string for the rule ("alert", "drop",
+   *    "reject")
    * @param protocol This is tcp, udp or any.
    * @param ip1 One of the IP addresses.
    * @param port1 The port number associated with IP1. Can be any.
    * @param ip2 The other IP address.
    * @param port2 Port associated with ip2.
    */
-  SuricataRuleMaker(std::string protocol, std::string ip1, std::string port1,
-                    std::string ip2,std::string port2);
+  SuricataRuleMaker(std::string action, std::string protocol, std::string ip1,
+                    std::string port1, std::string ip2,std::string port2);
   ~SuricataRuleMaker();
   /**
    * Given a signature string in blank-separated hex, a Snort rule is returned.
@@ -58,6 +60,7 @@ public:
 
 protected:
   static unsigned int sid_cnt;
+  std::string m_action;
   std::string m_protocol;
   std::string m_ip1;
   std::string m_port1;

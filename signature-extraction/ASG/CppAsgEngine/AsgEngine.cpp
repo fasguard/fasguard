@@ -299,9 +299,14 @@ AsgEngine::unsupervisedClustering()
   std::string rule_file =
     extract<std::string>
     (m_properties["ASG.SuricataUnsupervisedClusterRuleFile"]);
+
+  std::string action =
+    extract<std::string>
+    (m_properties["ASG.RuleAction"]);
+
   std::ofstream ruleStream(rule_file,std::ios::out | std::ios::app);
 
-  SuricataRuleMaker srm(attack_proto_string,"any","any","any",
+  SuricataRuleMaker srm(action,attack_proto_string,"any","any","any",
                         attack_port_string);
 
   int string_set_count = 0;
@@ -559,7 +564,11 @@ AsgEngine::singleAttack()
 
   BloomFilter bf(bf_name,m_blm_frm_mem);
 
-  SuricataRuleMaker srm(attack_proto_string,"any","any","any",
+  std::string action =
+    extract<std::string>
+    (m_properties["ASG.RuleAction"]);
+
+  SuricataRuleMaker srm(action, attack_proto_string,"any","any","any",
                         attack_port_string);
 
   int string_set_count = 0;
