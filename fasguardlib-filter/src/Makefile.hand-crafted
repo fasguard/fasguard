@@ -2,7 +2,8 @@ CPath=$(PBGMATHHOME)/mops/src/class:$(PBGMATHHOME)/mops/lib/java-getopt-1.0.9.ja
 CC=gcc
 CC1=../../mops/rc/cc1
 CPP=/usr/bin/cpp
-CXXFLAGS = -fPIC -std=c++11 -I. -g
+CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_LOG_DYN_LINK
+
 
 # The "real" mfsa, that is supposed to detect as error if we get to
 # the "executed a command while in unsafe-input mode"
