@@ -1,0 +1,80 @@
+Setting up ASG
+1) Install Ubuntu 14.04.3 on VM using username danw.
+2) Execute 'sudo apt-get install git'
+3) Make directory ~/fasguard-git and cd to it
+4) Setup RSA keys to access account on fasguard.d.bbn.com
+5) Execute 'git clone dwyschog@fasguard.d.bbn.com:/fasguard.git
+6) cd ~/fasguard-git/fasguard
+7) Execute 'git checkout origin/signature-extraction'
+8) cd ~/fasguard-git/fasguard/fasguardlib-filter/src
+9) Execute 'sudo apt-get install g++'
+10) Execute 'sudo apt-get install libboost-all-dev'
+11) Execute 'sudo apt-get install libpcap-dev'
+12) Execute 'make -f Makefile.hand-crafted' to build makebloom and libBloom.so.
+13) From
+    http://www.boost.org/doc/libs/1_59_0/more/getting_started/unix-variants.html
+    download boost_1_59_0.tar.bz2
+14) Decompress in (14)${HOME}/boost-standalone and go to boost-build directory
+15) Create ${HOME}/boost-local
+15) Run ./bootstrap.sh --prefix=${HOME}/boost-local
+17) Execute './b2 install'
+18) In fasguard/signature-extraction/ASG/CppAsgEngine/Jamroot, edit
+    'use-project boost' value to be
+    ': ../../../../../boost-standalone/boost_1_59_0 ;'
+19) Add ${HOME}/boost-standalone/boost_1_59_0 to path.
+18) Copy boost_1_59_0/tools/build/example/user-config.jam to user home
+    directory.
+19) Add line 'using python : 2.7 : /usr/bin/python2.7 : /usr/include/python2.7 : /usr/local/lib,/usr/lib,/usr/lib/x86_64-linux-gnu ;' to user-config.jam in user
+home directory.
+20) Copy
+    ${HOME}/boost-standalone/boost_1_59_0/libs/python/example/boost-build.jam
+    to
+    ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine
+21) Perform 'apt-get install libcrypto++'
+22) Modify 'testASG.py' to contain '/home/username' instead of '/home/dwyschogrod'
+23) Add '${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine' to
+    LD_LIBRARY_PATH.
+24) Set PYTHONPATH to include ${HOME}/fasguard-git/fasguard/signature-extraction/ASG
+25) Run 'apt-get install libpcap-dev'
+26) Run 'apt-get install python-pip'
+27) Run 'apt-get install python-libpcap'
+28) As root, run 'pip install lxml'
+29) As root, run 'pip install python-dateutil'
+30) As root, run 'pip install cybox==2.1.0.12
+31) As root, run 'pip install stix==1.1.1.5'
+32) As root, run 'pip install dpkt'
+33) Add '${HOME}/boost-local/lib' to LD_LIBRARY_PATH
+34) Add "#include <boost/regex.hpp>" and declaration of a regex to force
+    linking of regex library (this change will be checked in to git)
+35) In directory ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine,
+    execute bjam.
+36) Change directory to
+    ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/DetectorReports
+37) In Jamroot file, change
+    : /home/dwyschogrod/boost/boost_1_57_0 ;
+    to
+    : ../../../../../boost-standalone/boost_1_59_0 ;
+38) Execute bjam
+39) Got to ${HOME}/fasguard-git/fasguard/signature-extraction/ASG.
+    Execute "./ASG.py -h" and help message should appear.
+
+Setting up TAXII based communications
+1) As root, execute 'pip install Django'
+2) As root, execute 'pip install libtaxii'
+3) As root, execute 'pip install taxii-services'
+4) As root, execute 'pip install python-dateutil'
+5) As root, execute 'pip install pyopenssl'
+6) Create a directory ${HOME}/taxii
+7) In ${HOME}/taxii, execute
+   "git clone https://github.com/TAXIIProject/yeti.git"
+8) As root, execute 'apt-get install sqlite'
+9) As root, execute 'pip install django-solo' (don't know why this is
+10) In  ${HOME}/taxii/yeti, execute
+    "python manage.py syncdb"
+11) As root, execute 'pip install pyinotify'
+12) As root, execute 'pip install pyyaml'
+
+Installing Suricata:
+1) As root, execute 'add-apt-repository ppa:oisf/suricata-stable'
+2) As root, execute 'apt-get update'
+3) As root, execute 'apt-get install suricata'
