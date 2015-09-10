@@ -14,7 +14,8 @@ if ! [ python.configured ]
 # Specify the path to the Boost project.  If you move this project,
 # adjust this path to refer to the Boost root directory.
 use-project boost
-  : /home/dwyschogrod/boost/boost_1_57_0 ;
+#  : /home/dwyschogrod/boost/boost_1_57_0 ;
+  : ../../../../../boost-standalone/boost_1_59_0 ;
 #  : /usr/share/boost-build ;
 
 # Set up the project-wide requirements that everything uses the
