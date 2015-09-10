@@ -280,7 +280,7 @@ BloomFilter::BloomFilter(const std::string &filename, bool from_mem_p) :
     while(boost::regex_search(start,bf_prop_string.cend(),what,exp))
       {
         bf_properties[what[1]] = what[2];
-        BOOST_LOG_TRIVIAL(debug) << what[1] << " = " << what[2]
+        BOOST_LOG_TRIVIAL(debug) << std::string(what[1]) << " = " << std::string(what[2])
                                  << std::endl;
         start = what[0].second;
       }

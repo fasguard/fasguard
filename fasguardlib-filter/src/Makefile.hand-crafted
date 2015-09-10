@@ -2,7 +2,9 @@ CPath=$(PBGMATHHOME)/mops/src/class:$(PBGMATHHOME)/mops/lib/java-getopt-1.0.9.ja
 CC=gcc
 CC1=../../mops/rc/cc1
 CPP=/usr/bin/cpp
-CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_LOG_DYN_LINK
+#CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_ALL_DYN_LINK
+CXXFLAGS = -fPIC -std=c++11 -I. -I ../../../../boost-local/include  -g -DBOOST_LOG_DYN_LINK -DBOOST_REGEX_DYN_LINK
+#CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_LOG_DYN_LINK
 
 
 # The "real" mfsa, that is supposed to detect as error if we get to
@@ -43,7 +45,7 @@ all: makebloom
 #makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
 #makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o  BenignNgramStorage.o BloomFilter.o
 makebloom: makebloom.o  PcapFileEngine.o BloomPacketEngine.o libBloom.so
-	$(CC) -o $@ $^ -L. -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap -lBloom
+	$(CC) -o $@ $^ -L. -L ../../../../boost-local/lib -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap -lBloom
 
 libBloom.so: MurmurHash3.o BloomFilter.o BenignNgramStorage.o filter.o
 	$(CC) -shared -fPIC -o $@ $^
