@@ -6,42 +6,15 @@
 #include <boost/unordered_map.hpp>
 #include "lru_cache_using_std.h"
 #include "BenignNgramStorage.hh"
+#include "BloomFilterBase.hh"
 
-/**
- * @brief Stores data for caching of Bloom hash lookup.
- */
-class HashVals
-{
-public:
-  HashVals(boost::shared_ptr<std::vector<uint64_t> > bit_indeces);
-protected:
-  boost::shared_ptr<std::vector<uint64_t> > m_bit_indeces;
-};
-
-/**
- * @brief Functor to pass to hash
- */
-class CalcBitIndeces
-{
-public:
-  CalcBitIndeces(size_t num_hash_func, uint64_t filter_size_in_bits);
-  CalcBitIndeces()
-  {}
-  boost::shared_ptr<std::vector<uint64_t> >
-  operator()(const std::string &ngram);
-protected:
-  size_t m_num_hash_func;
-  uint64_t m_filter_size_in_bits;
-};
-//boost::shared_ptr<std::vector<uint64_t> >
-//calcBitIndeces(std::string ngram);
 /**
  * @brief Implementation of Bloom filter for ngrams.
  *
  * This stores a Bloom filter for a range of ngram sizes from the payload of
  * large numbers of packets for a single TCP or UDP service.
  */
-class BloomFilter : public BenignNgramStorage
+class BloomFilter : public BloomFilterBase
 {
 public:
   /**
@@ -113,7 +86,7 @@ public:
   static const unsigned int MAX_HASHES = 512;
   static const unsigned int CHAR_SIZE_BITS = 8;
   static const uint32_t HeaderLengthInBytes = 4096;
-  static const unsigned int NUM_CACHE_ENTRIES = 10000;
+  static const unsigned int NUM_CACHE_ENTRIES = 200000;
 
   /**
      @brief Type to use for the length (in bits) of a bloom filter
@@ -126,21 +99,6 @@ public:
   typedef uint_fast64_t num_hashes_type;
 
 protected:
-  /**
-     @brief Number of bits in the bloom filter.
-  */
-  index_type m_bitlength;
-
-  /**
-     @brief Number of hashes used in the bloom filter.
-  */
-  num_hashes_type m_num_hashes;
-
-  std::vector<uint8_t> mBloomFilter;
-
-  bool m_blm_frm_mem;
-
-  std::fstream m_bf_stream;
 
   boost::shared_ptr<lru_cache_using_std<
                       CalcBitIndeces,

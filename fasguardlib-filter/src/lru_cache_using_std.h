@@ -57,7 +57,11 @@ public:
   //lru_cache_using_std(value_type (*f)(const key_type&), size_t c)
   lru_cache_using_std(FuncType f, size_t c)
     :_fn(f)
-    ,_capacity(c)
+    ,_capacity(c) ,
+    m_misses(0),
+    m_hits(0),
+    m_hit_flag(false),
+    m_empty_return_flag(false)
   {
     assert(_capacity!=0);
   }
@@ -77,6 +81,8 @@ public:
       const value_type v=_fn(k);
       insert(k,v);
 
+      m_misses++;
+      m_hit_flag = false;
       // Return the freshly computed value
       return v;
 
@@ -91,9 +97,15 @@ public:
         _key_tracker,
         (*it).second.second
       );
+      m_hit_flag = true;
+      m_hits++;
 
       // Return the retrieved value
-      return (*it).second.first;
+      // Hack for FASGuard - If we've seen it already, don't need value
+      if(m_empty_return_flag)
+        return value_type();
+      else
+        return (*it).second.first;
     }
   }
 
@@ -106,6 +118,25 @@ public:
     while (src!=_key_tracker.rend()) {
       *dst++ = *src++;
     }
+  }
+
+  unsigned int getNumMisses() const
+  {
+    return m_misses;
+  }
+
+  unsigned int getNumHits() const
+  {
+    return m_hits;
+  }
+
+  bool getHitFlag() const
+  {
+    return m_hit_flag;
+  }
+  void setEmptyReturnFlag()
+  {
+    m_empty_return_flag = true;
   }
 
 private:
@@ -163,6 +194,13 @@ private:
 
   // Key-to-value lookup
   key_to_value_type _key_to_value;
+
+  // Keep statistics
+
+  unsigned int m_misses;
+  unsigned int m_hits;
+  bool m_hit_flag;
+  bool m_empty_return_flag;
 };
 
 #endif
