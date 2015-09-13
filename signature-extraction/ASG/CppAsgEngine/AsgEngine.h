@@ -9,7 +9,8 @@
 #include "Trie.h"
 #include "AbstractTrieNodeFactory.h"
 #include "MemoryTrieNodeFactory.h"
-#include "BloomFilter.hh"
+#include "BloomFilterThreaded.hh"
+#include "BloomFilterUnthreaded.hh"
 
 /**
  * This class is for a single ngram. It contains both the string that
@@ -133,9 +134,9 @@ class AsgEngine
    * @return Vector of strings that survive filtering.
    */
   std::vector<std::string>
-    filtSigFrags(BloomFilter &bf, std::vector<std::string> &frag_pieces);
+    filtSigFrags(BloomFilterBase &bf, std::vector<std::string> &frag_pieces);
   std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
-    filtNgrams(BloomFilter &bf,
+    filtNgrams(BloomFilterBase &bf,
                std::vector<std::string> &pkts);
 
   void
@@ -158,5 +159,6 @@ class AsgEngine
   bool m_debug;
   bool m_multiple_attack_flag;
   bool m_attack_boundaries_flag;
+  bool m_threaded_flag;
 };
 #endif

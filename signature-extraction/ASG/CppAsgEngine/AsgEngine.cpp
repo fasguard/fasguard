@@ -4,6 +4,7 @@
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+#include <boost/regex.hpp>
 #include <iostream>
 #include <algorithm>
 #include <sstream>
@@ -33,6 +34,9 @@ BOOST_PYTHON_MODULE(asg_engine_ext)
 }
 
 namespace logging = boost::log;
+
+
+boost::regex bogus_exp("(\\w+)\\s*=\\s*(\\w+)");
 
 Ngram:: Ngram(std::string content, unsigned int pkt_offset,
               unsigned int pkt_num):
@@ -65,6 +69,24 @@ AsgEngine::AsgEngine(dict properties, bool debug_flag) :
     {
       BOOST_LOG_TRIVIAL(error) << "Bad ASG.BloomFromMemory value: " <<
         blm_frm_mem << std::endl;
+      exit(-1);
+    }
+
+  std::string blm_threaded =
+    extract<std::string>(properties["ASG.BloomThreaded"]);
+
+  if(blm_threaded.compare(std::string("T")) == 0)
+    {
+      m_threaded_flag = true;
+    }
+  else if(blm_threaded.compare(std::string("F")) == 0)
+    {
+      m_threaded_flag = false;
+    }
+  else
+    {
+      BOOST_LOG_TRIVIAL(error) << "Bad ASG.BloomFromMemory value: " <<
+        blm_threaded << std::endl;
       exit(-1);
     }
 
@@ -294,7 +316,16 @@ AsgEngine::unsupervisedClustering()
   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
                            << bf_name << std::endl;
 
-  BloomFilter bf(bf_name,m_blm_frm_mem);
+  BloomFilterBase *bf;
+
+  if(m_threaded_flag)
+    {
+      bf = new BloomFilterThreaded(bf_name,m_blm_frm_mem);
+    }
+  else
+    {
+      bf = new BloomFilterUnthreaded(bf_name,m_blm_frm_mem);
+    }
 
   std::string rule_file =
     extract<std::string>
@@ -333,7 +364,7 @@ AsgEngine::unsupervisedClustering()
         regex_pieces.size() << std::endl;
 
       std::vector<std::string> filt_regex_pieces =
-        filtSigFrags(bf,regex_pieces);
+        filtSigFrags(*bf,regex_pieces);
 
        BOOST_LOG_TRIVIAL(debug)   << "Num filtered regex pieces: "<<
         filt_regex_pieces.size() << std::endl;
@@ -410,10 +441,11 @@ AsgEngine::unsupervisedClustering()
       string_set_count++;
     }
   ruleStream.close();
+  delete bf;
 }
 
 std::vector<std::string>
-AsgEngine::filtSigFrags(BloomFilter &bf,
+AsgEngine::filtSigFrags(BloomFilterBase &bf,
                         std::vector<std::string> &frag_pieces)
 {
   std::vector<std::string> result;
@@ -562,7 +594,17 @@ AsgEngine::singleAttack()
   BOOST_LOG_TRIVIAL(debug) << "Bloom Filter File Name: "
                            << bf_name << std::endl;
 
-  BloomFilter bf(bf_name,m_blm_frm_mem);
+  //BloomFilter bf(bf_name,m_blm_frm_mem);
+  BloomFilterBase *bf;
+
+  if(m_threaded_flag)
+    {
+      bf = new BloomFilterThreaded(bf_name,m_blm_frm_mem);
+    }
+  else
+    {
+      bf = new BloomFilterUnthreaded(bf_name,m_blm_frm_mem);
+    }
 
   std::string action =
     extract<std::string>
@@ -574,7 +616,7 @@ AsgEngine::singleAttack()
   int string_set_count = 0;
 
   std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
-    ngram_pair = filtNgrams(bf,pkt_content_list);
+    ngram_pair = filtNgrams(*bf,pkt_content_list);
   std::vector<Ngram> filt_regex_pieces =
     ngram_pair.first;
 
@@ -694,10 +736,11 @@ AsgEngine::singleAttack()
     }
 
   pcreRuleStream.close();
+  delete bf;
 }
 
 std::pair<std::vector<Ngram>,std::vector<std::vector<std::string> > >
-AsgEngine::filtNgrams(BloomFilter &bf,
+AsgEngine::filtNgrams(BloomFilterBase &bf,
                       std::vector<std::string> &pkts)
 {
   std::set<std::string> ngrams;
