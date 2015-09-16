@@ -93,10 +93,10 @@ public:
 
 protected:
 
-  boost::shared_ptr<lru_cache_using_std<
-                      CalcBitIndeces,
-                      std::string,std::vector<uint64_t>,
-                      boost::unordered_map> > m_cache;
+  // boost::shared_ptr<lru_cache_using_std<
+  //                  CalcBitIndeces,
+  //                  std::string,std::vector<uint64_t>,
+  //                  boost::unordered_map> > m_cache;
   CalcBitIndeces m_calc_bit_indeces;
 
 };
