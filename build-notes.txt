@@ -31,31 +31,30 @@ home directory.
     to
     ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine
 21) Perform 'apt-get install libcrypto++'
-22) Modify 'testASG.py' to contain '/home/username' instead of '/home/dwyschogrod'
-23) Add '${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine' to
+22) Add '${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine' to
     LD_LIBRARY_PATH.
-24) Set PYTHONPATH to include ${HOME}/fasguard-git/fasguard/signature-extraction/ASG
-25) Run 'apt-get install libpcap-dev'
-26) Run 'apt-get install python-pip'
-27) Run 'apt-get install python-libpcap'
-28) As root, run 'pip install lxml'
-29) As root, run 'pip install python-dateutil'
-30) As root, run 'pip install cybox==2.1.0.12
-31) As root, run 'pip install stix==1.1.1.5'
-32) As root, run 'pip install dpkt'
-33) Add '${HOME}/boost-local/lib' to LD_LIBRARY_PATH
-34) Add "#include <boost/regex.hpp>" and declaration of a regex to force
+23) Set PYTHONPATH to include ${HOME}/fasguard-git/fasguard/signature-extraction/ASG
+24) Run 'apt-get install libpcap-dev'
+25) Run 'apt-get install python-pip'
+26) Run 'apt-get install python-libpcap'
+27) As root, run 'pip install lxml'
+28) As root, run 'pip install python-dateutil'
+29) As root, run 'pip install cybox==2.1.0.12
+30) As root, run 'pip install stix==1.1.1.5'
+31) As root, run 'pip install dpkt'
+32) Add '${HOME}/boost-local/lib' to LD_LIBRARY_PATH
+33) Add "#include <boost/regex.hpp>" and declaration of a regex to force
     linking of regex library (this change will be checked in to git)
-35) In directory ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine,
+34) In directory ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine,
     execute bjam.
-36) Change directory to
+35) Change directory to
     ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/DetectorReports
-37) In Jamroot file, change
+36) In Jamroot file, change
     : /home/dwyschogrod/boost/boost_1_57_0 ;
     to
     : ../../../../../boost-standalone/boost_1_59_0 ;
-38) Execute bjam
-39) Got to ${HOME}/fasguard-git/fasguard/signature-extraction/ASG.
+37) Execute bjam
+38) Got to ${HOME}/fasguard-git/fasguard/signature-extraction/ASG.
     Execute "./ASG.py -h" and help message should appear.
 
 Setting up TAXII based communications

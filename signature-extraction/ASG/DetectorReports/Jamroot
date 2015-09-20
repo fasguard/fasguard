@@ -39,16 +39,3 @@ install convenient_copy
     <install-type>PYTHON_EXTENSION
     <location>.
   ;
-
-# A little "rule" (function) to clean up the syntax of declaring tests
-# of these extension modules.
-local rule run-test ( test-name : sources + )
-{
-    import testing ;
-    testing.make-test run-pyd : $(sources) : : $(test-name) ;
-}
-
-# Declare test targets
-run-test detector_xmt
-  : detector_xmt_ext ../ASG.py
-  ;
