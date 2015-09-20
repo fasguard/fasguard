@@ -10,7 +10,7 @@
 
 static const unsigned int MaxNgramLength = 16;
 static const unsigned int TrivStringBlockSize = 100;
-static const unsigned int BloomOffsetBlockSize = 10;
+static const unsigned int BloomOffsetBlockSize = 24;
 
 /**
  * Structure to hold strings. Needs a trivial destructor to be placed on

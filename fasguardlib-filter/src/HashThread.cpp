@@ -44,7 +44,7 @@ HashThread::operator()()
     {
       while(m_ngram_q.pop(ngram))
         {
-          if((ngram_total % 100000) == 0)
+          if((ngram_total % 10000000) == 0)
             {
               BOOST_LOG_TRIVIAL(debug) << "HashThread Ngram TOTAL: " <<
                 ngram_total <<
