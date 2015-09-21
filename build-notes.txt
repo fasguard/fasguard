@@ -1,60 +1,35 @@
-Setting up ASG
-1) Install Ubuntu 14.04.3 on VM using username danw.
-2) Execute 'sudo apt-get install git'
-3) Make directory ~/fasguard-git and cd to it
-4) Setup RSA keys to access account on fasguard.d.bbn.com
-5) Execute 'git clone dwyschog@fasguard.d.bbn.com:/fasguard.git
-6) cd ~/fasguard-git/fasguard
-7) Execute 'git checkout origin/signature-extraction'
-8) cd ~/fasguard-git/fasguard/fasguardlib-filter/src
-9) Execute 'sudo apt-get install g++'
-10) Execute 'sudo apt-get install libboost-all-dev'
-11) Execute 'sudo apt-get install libpcap-dev'
-12) Execute 'make -f Makefile.hand-crafted' to build makebloom and libBloom.so.
-13) From
-    http://www.boost.org/doc/libs/1_59_0/more/getting_started/unix-variants.html
-    download boost_1_59_0.tar.bz2
-14) Decompress in (14)${HOME}/boost-standalone and go to boost-build directory
-15) Create ${HOME}/boost-local
-15) Run ./bootstrap.sh --prefix=${HOME}/boost-local
-17) Execute './b2 install'
-18) In fasguard/signature-extraction/ASG/CppAsgEngine/Jamroot, edit
-    'use-project boost' value to be
-    ': ../../../../../boost-standalone/boost_1_59_0 ;'
-19) Add ${HOME}/boost-standalone/boost_1_59_0 to path.
-18) Copy boost_1_59_0/tools/build/example/user-config.jam to user home
-    directory.
-19) Add line 'using python : 2.7 : /usr/bin/python2.7 : /usr/include/python2.7 : /usr/local/lib,/usr/lib,/usr/lib/x86_64-linux-gnu ;' to user-config.jam in user
-home directory.
-20) Copy
-    ${HOME}/boost-standalone/boost_1_59_0/libs/python/example/boost-build.jam
-    to
-    ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine
-21) Perform 'apt-get install libcrypto++'
-22) Add '${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine' to
-    LD_LIBRARY_PATH.
-23) Set PYTHONPATH to include ${HOME}/fasguard-git/fasguard/signature-extraction/ASG
-24) Run 'apt-get install libpcap-dev'
-25) Run 'apt-get install python-pip'
-26) Run 'apt-get install python-libpcap'
-27) As root, run 'pip install lxml'
-28) As root, run 'pip install cybox==2.1.0.12
-29) As root, run 'pip install stix==1.1.1.5'
-30) As root, run 'pip install dpkt'
-31) Add '${HOME}/boost-local/lib' to LD_LIBRARY_PATH
-32) Add "#include <boost/regex.hpp>" and declaration of a regex to force
-    linking of regex library (this change will be checked in to git)
-33) In directory ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/CppAsgEngine,
-    execute bjam.
-34) Change directory to
-    ${HOME}/fasguard-git/fasguard/signature-extraction/ASG/DetectorReports
-35) In Jamroot file, change
-    : /home/dwyschogrod/boost/boost_1_57_0 ;
-    to
-    : ../../../../../boost-standalone/boost_1_59_0 ;
-36) Execute bjam
-37) Got to ${HOME}/fasguard-git/fasguard/signature-extraction/ASG.
-    Execute "./ASG.py -h" and help message should appear.
+Build fasguardlib-filter:
+1)  Install the required build and runtime dependencies.  Assuming
+    Ubuntu 14.04, install the following packages:
+      * build-essential
+      * libboost-log-dev
+      * libboost-program-options-dev
+      * libboost-regex-dev
+      * libpcap-dev
+2)  cd to the fasguardlib-filter/src directory
+3)  Execute 'make -f Makefile.hand-crafted' to build makebloom and
+    libBloom.so.
+
+Build ASG:
+1)  Install the required build and runtime dependencies.  Assuming
+    Ubuntu 14.04, install the following packages:
+      * build-essential
+      * libboost-log-dev
+      * libboost-python-dev
+      * libboost-regex-dev
+      * libboost-tools-dev
+      * libcrypto++-dev
+2)  Install additional runtime dependencies.  Assuming Ubuntu 14.04, install
+    the following packages:
+      * python-dpkt
+      * python-libpcap
+      * python-lxml
+    and the following from PyPI (you may need to install the
+    python-pip package first):
+      * stix ('pip install stix'), which will automatically install cybox
+3)  cd to the signature-extraction/ASG directory
+4)  Run ./build
+5)  Execute "./ASG.py -h" and a help message should appear.
 
 Setting up TAXII based communications
 1) As root, execute 'pip install Django'

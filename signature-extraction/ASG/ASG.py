@@ -134,6 +134,4 @@ def setup():
 
     process_detection(args.in_file,properties,args.debug)
 if __name__ == '__main__':
-    my_lib = ctypes.cdll.LoadLibrary(
-        '/usr/lib/x86_64-linux-gnu/libboost_log.so.1.54.0')
     setup()

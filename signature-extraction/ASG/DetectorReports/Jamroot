@@ -11,22 +11,15 @@ if ! [ python.configured ]
     using python ;
 }
 
-# Specify the path to the Boost project.  If you move this project,
-# adjust this path to refer to the Boost root directory.
-use-project boost
-  : ../../../../../boost-standalone/boost_1_59_0 ;
-
-project
-  : requirements
-    <library>/boost/python//boost_python
-    <implicit-dependency>/boost//headers
-  : usage-requirements
-    <implicit-dependency>/boost//headers
+lib
+  boost_python
   ;
 
 python-extension detector_xmt_ext
   : # sources
     DetectorReport.cpp
+  : # requirements
+    <library>boost_python
   ;
 
 # Put the extension and Boost.Python DLL in the current directory, so

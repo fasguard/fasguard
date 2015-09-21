@@ -11,24 +11,12 @@ if ! [ python.configured ]
     using python ;
 }
 
-# Specify the path to the Boost project.  If you move this project,
-# adjust this path to refer to the Boost root directory.
-use-project boost
-  : ../../../../../boost-standalone/boost_1_59_0 ;
-
-project
-  : requirements
-    <library>/boost/python//boost_python
-    <library-file>/home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src/libBloom.so
-    <implicit-dependency>/boost//headers
-    <include>/home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src
-    <include>../../../../../boost-local/include
-    <toolset>gcc:<cxxflags>-std=gnu++0x
-    <toolset>gcc:<cxxflags>-D=BOOST_LOG_DYN_LINK
-    <toolset>gcc:<cxxflags>-D=BOOST_REGEX_DYN_LINK
-    <toolset>clang:<cxxflags>-std=c++11
-  : usage-requirements
-    <implicit-dependency>/boost//headers
+lib
+  Bloom
+  boost_log
+  boost_python
+  boost_regex
+  crypto++
   ;
 
 python-extension asg_engine_ext
@@ -42,10 +30,16 @@ python-extension asg_engine_ext
     SuricataRuleMaker.cpp
     Trie.cpp
     ../DetectorReports/DetectorReport.cpp
-    ../../../../../boost-local/lib/libboost_log.so.1.59.0
-    ../../../../../boost-local/lib/libboost_regex.so.1.59.0
-    /usr/lib/libcrypto++.so.9.0.0
-    /home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src/libBloom.so
+  : # requirements
+    <library>boost_python
+    <toolset>gcc:<cxxflags>-std=gnu++0x
+    <toolset>clang:<cxxflags>-std=c++11
+    <define>BOOST_LOG_DYN_LINK
+    <define>BOOST_REGEX_DYN_LINK
+    <library>boost_log
+    <library>boost_regex
+    <library>crypto++
+    <library>Bloom
   ;
 
 # Put the extension and Boost.Python DLL in the current directory, so

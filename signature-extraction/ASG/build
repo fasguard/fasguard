@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd "${0%/*}" || exit 1
+libBloom=$(cd ../../fasguardlib-filter/src && pwd) || exit 1
+exec bjam \
+    include="${libBloom}" \
+    search="${libBloom}" \
+    dll-path="${libBloom}" \
+    || exit 1
