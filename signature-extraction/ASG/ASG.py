@@ -59,7 +59,9 @@ def setup():
     parser.add_argument('-s','--sqldb',required=False,action='store_true',
                         help='retrieve FASGuard STIX XML file from sql db')
     parser.add_argument('-p','--properties',type=str,required=False,
-                        default='asg.properties',help='properties file')
+                        default=os.path.join(os.path.dirname(__file__),
+                                             'asg.properties'),
+                        help='properties file')
 
     args = parser.parse_args()
     #print "In file: ",args.in_file
