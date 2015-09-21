@@ -14,28 +14,29 @@ if ! [ python.configured ]
 # Specify the path to the Boost project.  If you move this project,
 # adjust this path to refer to the Boost root directory.
 use-project boost
-#  : /home/dwyschogrod/boost/boost_1_57_0 ;
   : ../../../../../boost-standalone/boost_1_59_0 ;
-#  : /usr/share/boost-build ;
 
-# Set up the project-wide requirements that everything uses the
-# boost_python library from the project whose global ID is
-# /boost/python.
 project
-  : requirements <library>/boost/python//boost_python
-                 <implicit-dependency>/boost//headers
-  : usage-requirements <implicit-dependency>/boost//headers
+  : requirements
+    <library>/boost/python//boost_python
+    <implicit-dependency>/boost//headers
+  : usage-requirements
+    <implicit-dependency>/boost//headers
   ;
 
-# Declare the three extension modules.  You can specify multiple
-# source files after the colon separated by spaces.
-python-extension detector_xmt_ext : DetectorReport.cpp ;
+python-extension detector_xmt_ext
+  : # sources
+    DetectorReport.cpp
+  ;
 
 # Put the extension and Boost.Python DLL in the current directory, so
 # that running script by hand works.
 install convenient_copy
   : detector_xmt_ext
-  : <install-dependencies>on <install-type>SHARED_LIB <install-type>PYTHON_EXTENSION
+  : # requirements
+    <install-dependencies>on
+    <install-type>SHARED_LIB
+    <install-type>PYTHON_EXTENSION
     <location>.
   ;
 
@@ -48,4 +49,6 @@ local rule run-test ( test-name : sources + )
 }
 
 # Declare test targets
-run-test detector_xmt : detector_xmt_ext ../ASG.py ;
+run-test detector_xmt
+  : detector_xmt_ext ../ASG.py
+  ;
