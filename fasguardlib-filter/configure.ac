@@ -15,6 +15,21 @@ AX_CXX_COMPILE_STDCXX_11
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
 
+BOOST_REQUIRE([1.54])
+BOOST_STATIC
+AS_IF([test x"${enable_static_boost}" != xyes], [
+    AC_DEFINE([BOOST_ALL_DYN_LINK], [1],
+              [Define to 1 if dynamically linking to Boost])
+])
+BOOST_FIND_HEADER([boost/atomic.hpp])
+BOOST_FIND_HEADER([boost/lockfree/queue.hpp])
+BOOST_DATE_TIME
+BOOST_LOG
+BOOST_PROGRAM_OPTIONS
+BOOST_REGEX
+BOOST_SMART_PTR
+BOOST_THREAD
+BOOST_UNORDERED
 
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
