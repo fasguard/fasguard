@@ -22,7 +22,7 @@ lib_LTLIBRARIES =
 # libfasguardfilter
 ######################################################################
 lib_LTLIBRARIES += \
-	src/libfasguardfilter.la
+	libfasguardfilter.la
 
 fasguardfilterinclude_HEADERS += \
 	include/fasguardfilter/BenignNgramStorage.hh \
@@ -32,7 +32,7 @@ fasguardfilterinclude_HEADERS += \
 	include/fasguardfilter/HashThread.hh \
 	include/fasguardfilter/lru_cache_using_std.h
 
-src_libfasguardfilter_la_SOURCES = \
+libfasguardfilter_la_SOURCES = \
 	src/BenignNgramStorage.cpp \
 	src/BloomFilterBase.cpp \
 	src/BloomFilterThreaded.cpp \
@@ -45,12 +45,12 @@ src_libfasguardfilter_la_SOURCES = \
 	src/fasguardfilter.hpp \
 	src/filter.cpp
 
-src_libfasguardfilter_la_CPPFLAGS = \
+libfasguardfilter_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	-I$(top_srcdir)/include
 
-src_libfasguardfilter_la_LDFLAGS = \
+libfasguardfilter_la_LDFLAGS = \
 	$(AM_LDFLAGS) \
 	$(BOOST_DATE_TIME_LDFLAGS) \
 	$(BOOST_LOG_LDFLAGS) \
@@ -58,7 +58,7 @@ src_libfasguardfilter_la_LDFLAGS = \
 	$(BOOST_THREAD_LDFLAGS) \
 	-version-info 0:0:0
 
-src_libfasguardfilter_la_LIBADD = \
+libfasguardfilter_la_LIBADD = \
 	$(BOOST_DATE_TIME_LDPATH) \
 	$(BOOST_DATE_TIME_LIBS) \
 	$(BOOST_LOG_LDPATH) \
@@ -72,9 +72,9 @@ src_libfasguardfilter_la_LIBADD = \
 # makebloom
 ######################################################################
 bin_PROGRAMS += \
-	src/makebloom
+	makebloom
 
-src_makebloom_SOURCES = \
+makebloom_SOURCES = \
 	src/BloomFilter.hh \
 	src/BloomPacketEngine.cpp \
 	src/BloomPacketEngine.hpp \
@@ -82,20 +82,20 @@ src_makebloom_SOURCES = \
 	src/PcapFileEngine.hpp \
 	src/makebloom.cpp
 
-src_makebloom_CPPFLAGS = \
+makebloom_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	-I$(top_srcdir)/include
 
-src_makebloom_LDFLAGS = \
+makebloom_LDFLAGS = \
 	$(AM_LDFLAGS) \
 	$(BOOST_DATE_TIME_LDFLAGS) \
 	$(BOOST_LOG_LDFLAGS) \
 	$(BOOST_PROGRAM_OPTIONS_LDFLAGS) \
 	$(BOOST_THREAD_LDFLAGS)
 
-src_makebloom_LDADD = \
-	src/libfasguardfilter.la \
+makebloom_LDADD = \
+	libfasguardfilter.la \
 	$(BOOST_DATE_TIME_LDPATH) \
 	$(BOOST_DATE_TIME_LIBS) \
 	$(BOOST_LOG_LDPATH) \
