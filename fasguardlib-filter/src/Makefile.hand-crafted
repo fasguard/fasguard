@@ -1,61 +1,47 @@
-CPath=$(PBGMATHHOME)/mops/src/class:$(PBGMATHHOME)/mops/lib/java-getopt-1.0.9.jar
 CC=gcc
 CC1=../../mops/rc/cc1
 CPP=/usr/bin/cpp
-#CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_ALL_DYN_LINK
-CXXFLAGS = -fPIC -std=c++11 -O3 -I. -I ../../../../boost-local/include  -g -DBOOST_LOG_DYN_LINK -DBOOST_REGEX_DYN_LINK
-#CXXFLAGS = -fPIC -std=c++11 -I. -g -DBOOST_LOG_DYN_LINK
-
-
-# The "real" mfsa, that is supposed to detect as error if we get to
-# the "executed a command while in unsafe-input mode"
-MFSA=CWE250.mfsa
-FSA=named-critical-functions.fsa
-
-# sample fsa and mfsa that treats merely calling exec* as an error
-# (and which behaves properly, detecting the error and producing trace
-# files for the error).
-# MFSA=s1.mfsa
-# FSA=s1.fsa
+CXXFLAGS = \
+	-fPIC -std=c++11 -O3 -g \
+	-I. -I ../../../../boost-local/include \
+	-DBOOST_LOG_DYN_LINK -DBOOST_REGEX_DYN_LINK
 
 .SUFFIXES: .c .i .o .cfg .scfg .o .stra .tra .dot .fsa .txt .cpp
 
 .c:
-		$(CC) -o $@ $<
+	$(CC) -o $@ $<
 
 .c.i:
-		@echo -------------------- $(*F) -------------------------
-		$(CPP) -o $@ $<
+	@echo -------------------- $(*F) -------------------------
+	$(CPP) -o $@ $<
 
 .i.cfg:
-		$(CC1) -o $@ $<
+	$(CC1) -o $@ $<
 
 .fsa.dot:
-		$(JAVA) Fsa2Dot -l -i $< -o $@
+	$(JAVA) Fsa2Dot -l -i $< -o $@
 
 .cfg.dot:
-		$(JAVA) Cfg2Dot -i $< -o $@
-		@mkdir -p $(*F).dotfiles
-		$(DOTSPLIT) -d $(*F).dotfiles $@
-		@mv $@ $(*F).dotfiles
+	$(JAVA) Cfg2Dot -i $< -o $@
+	@mkdir -p $(*F).dotfiles
+	$(DOTSPLIT) -d $(*F).dotfiles $@
+	@mv $@ $(*F).dotfiles
 
 all: makebloom
 
-
-#makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
-#makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o  BenignNgramStorage.o BloomFilter.o
-makebloom: makebloom.o  PcapFileEngine.o BloomPacketEngine.o libBloom.so
-	$(CC) -o $@ $^ -L. -L ../../../../boost-local/lib -lm -lboost_log -lpthread -lstdc++ -lboost_program_options -lboost_regex -lboost_system -lpcap -lboost_thread -lBloom -lboost_system -lboost_filesystem
+makebloom: makebloom.o PcapFileEngine.o BloomPacketEngine.o libBloom.so
+	$(CC) -o $@ $^ \
+		-L. -L ../../../../boost-local/lib \
+		-lm -lboost_log -lpthread -lstdc++ \
+		-lboost_program_options -lboost_regex -lboost_system \
+		-lpcap -lboost_thread -lBloom -lboost_system \
+		-lboost_filesystem
 
 libBloom.so: MurmurHash3.o BloomFilterUnthreaded.o BenignNgramStorage.o \
 	filter.o BloomFilterThreaded.o BloomFilterBase.o HashThread.o \
 	BloomInsertThread.o
 	$(CC) -shared -fPIC -o $@ $^
 
-
-# make executables
-
 clean:
-		-rm -f t0 t1 t2 t3 *.tra *.o *.cfg *.scfg *.stra *.dot *.tra.* \
-		*.so
-		-rm -r -f *.dotfiles *~ \#**\#
+	-rm -f t0 t1 t2 t3 *.tra *.o *.cfg *.scfg *.stra *.dot *.tra.* *.so
+	-rm -r -f *.dotfiles *~ \#**\#
