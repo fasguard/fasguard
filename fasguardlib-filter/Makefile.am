@@ -25,9 +25,6 @@ lib_LTLIBRARIES =
 lib_LTLIBRARIES += \
 	src/libfasguardfilter.la
 
-LDADD_LIBFASGUARDFILTER = \
-	src/libfasguardfilter.la
-
 include_HEADERS += \
 	src/fasguardfilter.hpp \
 	src/MurmurHash3.h \
@@ -51,4 +48,4 @@ src_makebloom_SOURCES = \
 	src/makebloom.cpp
 
 src_makebloom_LDADD = \
-	$(LDADD_LIBFASGUARDFILTER)
+	src/libfasguardfilter.la
