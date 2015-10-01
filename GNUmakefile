@@ -13,7 +13,8 @@
 # components (dependencies are specified after the 'all' target below)
 components := \
 	fasguard-ad-host-peering \
-	fasguardlib-ad-tx
+	fasguardlib-ad-tx \
+	fasguardlib-filter
 
 # default target goes first
 all: $(components)
