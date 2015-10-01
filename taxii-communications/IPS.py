@@ -36,13 +36,6 @@ class IPS:
     """
     def _getConfigFile(self, pid):
         raise NotImplementedError("Method not implemented for " + self.__class__.__name__)
-    def _getPid(self, name):
-        ret = None
-        try:
-            ret = check_output(["pidof", "-s", name]).rstrip()
-        except:
-             pass
-        return ret
     def isValid(self):
         return self.rulesFile is not None and self.rulesFile and os.access(self.rulesFile, os.F_OK|os.R_OK|os.W_OK)
     def _checkConfigFile(self, path):
@@ -82,7 +75,7 @@ class Suricata(IPS):
         self.rulesFile = None
         if not self.configFile and not self.pid:
             # Look for a running instance
-            self.pid = IPS._getPid(self, "suricata")
+            self.pid = IPS._getPid("suricata")
         if not self.configFile and not self.pid:
             # No running instance. Find a config file using default paths
             self._getSuricataConfFile()
@@ -181,7 +174,7 @@ class Snort(IPS):
         self.rulesFile = None
         if not self.configFile and not self.pid:
             # Look for a running instance
-            self.pid = IPS._getPid(self, "snort")
+            self.pid = _getPid("snort")
         if not self.configFile and not self.pid:
             # No running instance. Find a config file using default paths
             self._getSnortConfFile()
@@ -247,8 +240,48 @@ class Snort(IPS):
         if self.pid is not None and self.pid:
             # process was running - send USR2
             os.kill(self.pid, signal.SIGHUP)
-def setup():
-    ips = Snort()
-    print ips.rulesFile
+def _getPid(name):
+    ret = None
+    try:
+        ret = check_output(["pidof", "-s", name]).rstrip()
+    except:
+         pass
+    return ret
+def SnortOrSuricata(configFile=None):
+    if not configFile:
+        snort = _getPid("snort")
+        if snort:
+            return Snort(pid=snort)
+        suricata = _getPid("suricata")
+        if suricata:
+            return Suricata(pid=suricata)
+        # Neither is running. Is either configured?
+        if os.path.exists("/usr/local/etc/snort/snort.conf"):
+            return Snort(configFile="/usr/local/etc/snort/snort.conf")
+        if os.path.exists("/etc/snort/snort.conf"):
+            return Snort(configFile="/etc/snort/snort.conf")
+        if os.path.exists("/usr/local/etc/suricata/suricata.yaml"):
+            return Suricata(configFile="/usr/local/etc/suricata/suricata.yaml")
+        if os.path.exists("/etc/suricata/suricata.yaml"):
+            return Suricata(configFile="/etc/suricata/suricata.yaml")
+        return None
+    else:
+        if not os.path.exists(configFile):
+            raise ValueError("Specified configuration file " + configFile + " does not exist")
+        if  "snort" in configFile:
+            return Snort(configFile=configFile)
+        if "suricata" in configFile:
+            return Suricata(configFile=configFile)
+    return None
+def _setup():
+    parser = argparse.ArgumentParser(description='Test IPS')
+    parser.add_argument('-c','--config',type=str,required=False,
+                        help='Configuration file of IDS instance to inject rules into')
+    config=None
+    args = parser.parse_args()
+    # Snort or Suricata?
+    ids = SnortOrSuricata(config)
+    if not ids:
+        raise Exception('Could not identify an instance of Snort or Suricata to work with')
 if __name__ == '__main__':
-    setup()
+    _setup()
