@@ -45,7 +45,7 @@ all: makebloom
 #makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
 #makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o  BenignNgramStorage.o BloomFilter.o
 makebloom: makebloom.o  PcapFileEngine.o BloomPacketEngine.o libBloom.so
-	$(CC) -o $@ $^ -L. -L ../../../../boost-local/lib -lm -lboost_log -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lboost_system -lpcap -lboost_thread -lBloom -lboost_system -lboost_filesystem
+	$(CC) -o $@ $^ -L. -L ../../../../boost-local/lib -lm -lboost_log -lpthread -lstdc++ -lboost_program_options -lboost_regex -lboost_system -lpcap -lboost_thread -lBloom -lboost_system -lboost_filesystem
 
 libBloom.so: MurmurHash3.o BloomFilterUnthreaded.o BenignNgramStorage.o \
 	filter.o BloomFilterThreaded.o BloomFilterBase.o HashThread.o \
