@@ -1,0 +1,51 @@
+CPath=$(PBGMATHHOME)/mops/src/class:$(PBGMATHHOME)/mops/lib/java-getopt-1.0.9.jar
+CC=gcc
+CC1=../../mops/rc/cc1
+CPP=/usr/bin/cpp
+CXXFLAGS = -std=c++11 -I. -I/home/dwyschog/local -g -DBOOST_LOG_DYN_LINK
+
+# The "real" mfsa, that is supposed to detect as error if we get to
+# the "executed a command while in unsafe-input mode"
+MFSA=CWE250.mfsa
+FSA=named-critical-functions.fsa
+
+# sample fsa and mfsa that treats merely calling exec* as an error
+# (and which behaves properly, detecting the error and producing trace
+# files for the error).
+# MFSA=s1.mfsa
+# FSA=s1.fsa
+
+.SUFFIXES: .c .i .o .cfg .scfg .o .stra .tra .dot .fsa .txt .cpp
+
+.c:
+		$(CC) -o $@ $<
+
+.c.i:
+		@echo -------------------- $(*F) -------------------------
+		$(CPP) -o $@ $<
+
+.i.cfg:
+		$(CC1) -o $@ $<
+
+.fsa.dot:
+		$(JAVA) Fsa2Dot -l -i $< -o $@
+
+.cfg.dot:
+		$(JAVA) Cfg2Dot -i $< -o $@
+		@mkdir -p $(*F).dotfiles
+		$(DOTSPLIT) -d $(*F).dotfiles $@
+		@mv $@ $(*F).dotfiles
+
+all: makebloom
+
+
+#makebloom: makebloom.o MurmurHash3.o filter.o bloomfilter.o
+makebloom: makebloom.o bloomfilterImpl.o filter.o PcapFileEngine.o BloomPacketEngine.o MurmurHash3.o BenignNgramStorage.o BloomFilter.o
+	$(CC) -o $@ $^ -L/home/dwyschog/local/lib -lm -lboost_log -lboost_log_setup -lpthread -lstdc++ -lboost_exception -lboost_program_options -lboost_regex -lpcap -lboost_log -lboost_log_setup -lboost_program_options -lboost_program_options
+
+
+# make executables
+
+clean:
+		-rm -f t0 t1 t2 t3 *.tra *.o *.cfg *.scfg *.stra *.dot *.tra.*
+		-rm -r -f *.dotfiles *~ \#**\#
