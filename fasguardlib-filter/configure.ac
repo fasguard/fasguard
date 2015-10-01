@@ -15,6 +15,16 @@ AX_CXX_COMPILE_STDCXX_11
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
 
+AC_CHECK_HEADERS([pcap/pcap.h], [], [
+    AC_MSG_FAILURE([pcap/pcap.h not found])
+])
+AC_CHECK_LIB([pcap], [pcap_open_live], [
+    PCAP_LIBS=-lpcap
+    AC_SUBST([PCAP_LIBS])
+], [
+    AC_MSG_FAILURE([libpcap not found])
+])
+
 BOOST_REQUIRE([1.54])
 BOOST_STATIC
 AS_IF([test x"${enable_static_boost}" != xyes], [
