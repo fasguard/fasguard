@@ -4,8 +4,8 @@
 #include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include "lru_cache_using_std.h"
-#include "BenignNgramStorage.hh"
+#include <lru_cache_using_std.h>
+#include <BenignNgramStorage.hh>
 
 /**
  * @brief Stores data for caching of Bloom hash lookup.

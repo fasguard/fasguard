@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <iterator>
 #include <pcap.h>
-#include "BloomFilterUnthreaded.hh"
-#include "BloomFilterThreaded.hh"
+#include <BloomFilterUnthreaded.hh>
+#include <BloomFilterThreaded.hh>
 #include "PcapFileEngine.hpp"
 //#include "MurmurHash3.h"
 

@@ -5,8 +5,8 @@
 #include <boost/unordered_map.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
-#include "lru_cache_using_std.h"
-#include "BloomFilterBase.hh"
+#include <lru_cache_using_std.h>
+#include <BloomFilterBase.hh>
 
 static const unsigned int MaxNgramLength = 16;
 static const unsigned int TrivStringBlockSize = 100;

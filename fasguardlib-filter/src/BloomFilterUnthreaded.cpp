@@ -4,7 +4,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
-#include "BloomFilterUnthreaded.hh"
+#include <BloomFilterUnthreaded.hh>
 #include "MurmurHash3.h"
 
 /**

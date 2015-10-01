@@ -3,7 +3,7 @@ CC1=../../mops/rc/cc1
 CPP=/usr/bin/cpp
 CXXFLAGS = \
 	-fPIC -std=c++11 -O3 -g \
-	-I. -I ../../../../boost-local/include \
+	-I. -I ../../../../boost-local/include -I../include \
 	-DBOOST_LOG_DYN_LINK -DBOOST_REGEX_DYN_LINK
 
 .SUFFIXES: .c .i .o .cfg .scfg .o .stra .tra .dot .fsa .txt .cpp

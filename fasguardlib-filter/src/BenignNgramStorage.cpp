@@ -1,6 +1,6 @@
 #include <boost/log/trivial.hpp>
 #include <sstream>
-#include "BenignNgramStorage.hh"
+#include <BenignNgramStorage.hh>
 
 BenignNgramStorage::BenignNgramStorage(int ip_protocol_num, int port_num,
                                        int min_ngram_size, int max_ngram_size):

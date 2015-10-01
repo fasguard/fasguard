@@ -5,9 +5,9 @@
 #include <boost/unordered_map.hpp>
 #include <boost/lockfree/queue.hpp>
 #include <boost/atomic.hpp>
-#include "lru_cache_using_std.h"
-#include "BloomFilterBase.hh"
-#include "HashThread.hh"
+#include <lru_cache_using_std.h>
+#include <BloomFilterBase.hh>
+#include <HashThread.hh>
 
 /**
  * A functor class to be handed as a parameter to a thread which turns on

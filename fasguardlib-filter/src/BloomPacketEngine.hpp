@@ -2,7 +2,7 @@
 #define BLOOM_PACKET_ENGINE_HH
 
 #include <string>
-#include "BloomFilterBase.hh"
+#include <BloomFilterBase.hh>
 
 namespace fasguard
 {

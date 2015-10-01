@@ -6,7 +6,7 @@
 #include <net/ethernet.h>
 #include <netinet/in.h>
 
-#include "BloomFilterBase.hh"
+#include <BloomFilterBase.hh>
 #include "BloomPacketEngine.hpp"
 
 namespace fasguard
