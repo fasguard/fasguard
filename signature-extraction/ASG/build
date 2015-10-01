@@ -4,6 +4,6 @@ cd "${0%/*}" || exit 1
 libfasguardfilter=$(cd ../../fasguardlib-filter && pwd) || exit 1
 exec bjam \
     include="${libfasguardfilter}"/include \
-    search="${libfasguardfilter}"/src \
-    dll-path="${libfasguardfilter}"/src \
+    search="${libfasguardfilter}"/src/.libs \
+    dll-path="${libfasguardfilter}"/src/.libs \
     || exit 1

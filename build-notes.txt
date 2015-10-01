@@ -1,15 +1,3 @@
-Build fasguardlib-filter:
-1)  Install the required build and runtime dependencies.  Assuming
-    Ubuntu 14.04, install the following packages:
-      * build-essential
-      * libboost-log-dev
-      * libboost-program-options-dev
-      * libboost-regex-dev
-      * libpcap-dev
-2)  cd to the fasguardlib-filter/src directory
-3)  Execute 'make -f Makefile.hand-crafted' to build makebloom and
-    libfasguardfilter.so.
-
 Build ASG:
 1)  Install the required build and runtime dependencies.  Assuming
     Ubuntu 14.04, install the following packages:
@@ -28,8 +16,10 @@ Build ASG:
     python-pip package first):
       * stix ('pip install stix'), which will automatically install cybox
 3)  cd to the signature-extraction/ASG directory
-4)  Run ./build
-5)  Execute "./ASG.py -h" and a help message should appear.
+4)  edit the paths in ./build to point to where you installed
+    libfasguardfilter and its headers
+5)  Run ./build
+6)  Execute "./ASG.py -h" and a help message should appear.
 
 Setting up TAXII based communications
 1) As root, execute 'pip install Django'
