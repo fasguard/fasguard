@@ -22,9 +22,6 @@ lib_LTLIBRARIES =
 ######################################################################
 # libfasguardfilter
 ######################################################################
-AM_CPPFLAGS += \
-	-isystem $(top_srcdir)/src
-
 lib_LTLIBRARIES += \
 	src/libfasguardfilter.la
 
