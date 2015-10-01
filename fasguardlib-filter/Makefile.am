@@ -56,7 +56,8 @@ libfasguardfilter_la_LDFLAGS = \
 	$(BOOST_LOG_LDFLAGS) \
 	$(BOOST_REGEX_LDFLAGS) \
 	$(BOOST_THREAD_LDFLAGS) \
-	-version-info 0:0:0
+	-version-info 0:0:0 \
+	--no-undefined
 
 libfasguardfilter_la_LIBADD = \
 	$(BOOST_DATE_TIME_LDPATH) \
