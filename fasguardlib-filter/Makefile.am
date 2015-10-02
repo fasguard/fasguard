@@ -10,6 +10,7 @@ ACLOCAL_AMFLAGS = -I m4 -I build-aux
 
 AM_CPPFLAGS =
 AM_CXXFLAGS =
+AM_LDFLAGS =
 
 bin_PROGRAMS =
 include_HEADERS =
@@ -32,6 +33,7 @@ src_libfasguardfilter_la_SOURCES = \
 	src/MurmurHash3.cpp
 
 src_libfasguardfilter_la_LDFLAGS = \
+	$(AM_LDFLAGS) \
 	-version-info 0:0:0
 
 ######################################################################
