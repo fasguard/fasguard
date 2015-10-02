@@ -9,8 +9,8 @@
 #include "Trie.h"
 #include "AbstractTrieNodeFactory.h"
 #include "MemoryTrieNodeFactory.h"
-#include <BloomFilterThreaded.hh>
-#include <BloomFilterUnthreaded.hh>
+#include <fasguardfilter/BloomFilterThreaded.hh>
+#include <fasguardfilter/BloomFilterUnthreaded.hh>
 
 /**
  * This class is for a single ngram. It contains both the string that

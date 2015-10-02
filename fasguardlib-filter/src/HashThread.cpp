@@ -3,7 +3,7 @@
 #include <boost/log/expressions.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <HashThread.hh>
+#include <fasguardfilter/HashThread.hh>
 
 
 static boost::atomic<unsigned int> ngram_total;

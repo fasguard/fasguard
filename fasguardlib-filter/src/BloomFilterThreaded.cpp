@@ -5,7 +5,7 @@
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/thread/thread.hpp>
-#include <BloomFilterThreaded.hh>
+#include <fasguardfilter/BloomFilterThreaded.hh>
 #include "BloomInsertThread.hh"
 #include "MurmurHash3.h"
 

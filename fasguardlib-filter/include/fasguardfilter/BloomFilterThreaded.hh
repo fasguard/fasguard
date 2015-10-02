@@ -4,11 +4,11 @@
 #include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <lru_cache_using_std.h>
+#include <fasguardfilter/lru_cache_using_std.h>
 #include <boost/thread/thread.hpp>
 #include <boost/lockfree/queue.hpp>
-#include <BloomFilterBase.hh>
-#include <HashThread.hh>
+#include <fasguardfilter/BloomFilterBase.hh>
+#include <fasguardfilter/HashThread.hh>
 
 std::vector<HashThread> ht_vec;
 

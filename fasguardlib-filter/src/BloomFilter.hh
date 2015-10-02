@@ -4,9 +4,9 @@
 #include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <lru_cache_using_std.h>
-#include <BenignNgramStorage.hh>
-#include <BloomFilterBase.hh>
+#include <fasguardfilter/lru_cache_using_std.h>
+#include <fasguardfilter/BenignNgramStorage.hh>
+#include <fasguardfilter/BloomFilterBase.hh>
 
 /**
  * @brief Implementation of Bloom filter for ngrams.
