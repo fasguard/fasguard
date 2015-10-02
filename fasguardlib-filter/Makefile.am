@@ -18,6 +18,9 @@ bin_PROGRAMS =
 include_HEADERS =
 lib_LTLIBRARIES =
 
+EXTRA_DIST = \
+	autogen.sh
+
 ######################################################################
 # libfasguardfilter
 ######################################################################
