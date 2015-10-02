@@ -75,3 +75,12 @@ $(components):
 	biglog "$${c}: make install" && \
 	make install && \
 	biglog "$${c}: FINISH"
+
+components_clean := $(foreach c,$(components),clean-$(c)) clean-INSTALL
+.PHONY: $(components_clean)
+$(components_clean):
+	@$(set_log_functions) && \
+	c=$(call quote,$@) && c=$${c#clean-} && d=$(builddir_q)/$${c} && \
+	log "deleting $${c} ($${d})..." && \
+	{ ! [ -d "$${d}" ] || chmod -R u+rw "$${d}"; } && \
+	rm -rf "$${d}"
