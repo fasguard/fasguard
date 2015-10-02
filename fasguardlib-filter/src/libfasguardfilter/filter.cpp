@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 // Make sure to get enough out of inttypes.h
 #define __STDC_FORMAT_MACROS
 #define __STDC_LIMIT_MACROS

@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <boost/log/trivial.hpp>
 #include <iostream>
 #include <boost/thread/thread.hpp>
