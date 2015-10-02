@@ -33,17 +33,17 @@ fasguardfilterinclude_HEADERS += \
 	include/fasguardfilter/lru_cache_using_std.h
 
 libfasguardfilter_la_SOURCES = \
-	src/BenignNgramStorage.cpp \
-	src/BloomFilterBase.cpp \
-	src/BloomFilterThreaded.cpp \
-	src/BloomFilterUnthreaded.cpp \
-	src/BloomInsertThread.cpp \
-	src/BloomInsertThread.hh \
-	src/HashThread.cpp \
-	src/MurmurHash3.cpp \
-	src/MurmurHash3.h \
-	src/fasguardfilter.hpp \
-	src/filter.cpp
+	src/libfasguardfilter/BenignNgramStorage.cpp \
+	src/libfasguardfilter/BloomFilterBase.cpp \
+	src/libfasguardfilter/BloomFilterThreaded.cpp \
+	src/libfasguardfilter/BloomFilterUnthreaded.cpp \
+	src/libfasguardfilter/BloomInsertThread.cpp \
+	src/libfasguardfilter/BloomInsertThread.hh \
+	src/libfasguardfilter/HashThread.cpp \
+	src/libfasguardfilter/MurmurHash3.cpp \
+	src/libfasguardfilter/MurmurHash3.h \
+	src/libfasguardfilter/fasguardfilter.hpp \
+	src/libfasguardfilter/filter.cpp
 
 libfasguardfilter_la_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
@@ -76,12 +76,12 @@ bin_PROGRAMS += \
 	makebloom
 
 makebloom_SOURCES = \
-	src/BloomFilter.hh \
-	src/BloomPacketEngine.cpp \
-	src/BloomPacketEngine.hpp \
-	src/PcapFileEngine.cpp \
-	src/PcapFileEngine.hpp \
-	src/makebloom.cpp
+	src/makebloom/BloomFilter.hh \
+	src/makebloom/BloomPacketEngine.cpp \
+	src/makebloom/BloomPacketEngine.hpp \
+	src/makebloom/PcapFileEngine.cpp \
+	src/makebloom/PcapFileEngine.hpp \
+	src/makebloom/makebloom.cpp
 
 makebloom_CPPFLAGS = \
 	$(AM_CPPFLAGS) \
