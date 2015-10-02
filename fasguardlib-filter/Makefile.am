@@ -9,11 +9,7 @@ AUTOMAKE_OPTIONS = \
 ACLOCAL_AMFLAGS = -I m4 -I build-aux
 
 AM_CPPFLAGS =
-
-AM_CXXFLAGS = \
-	-Wall \
-	-Wextra \
-	-g
+AM_CXXFLAGS =
 
 bin_PROGRAMS =
 include_HEADERS =

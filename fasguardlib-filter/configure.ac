@@ -30,6 +30,8 @@ AS_IF([test x"${GXX}" = xyes && test x"${fasguard_cxxflags_given}" != xyes], [
 AC_PROG_CXX_C_O
 AX_CXX_COMPILE_STDCXX_11
 
+AS_IF([test x"${GXX}" = xyes], [CXXFLAGS="${CXXFLAGS} -Wall -Wextra"])
+
 LT_INIT
 AC_PROG_MAKE_SET
 AC_PROG_LN_S
