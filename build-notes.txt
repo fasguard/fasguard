@@ -8,7 +8,7 @@ Build fasguardlib-filter:
       * libpcap-dev
 2)  cd to the fasguardlib-filter/src directory
 3)  Execute 'make -f Makefile.hand-crafted' to build makebloom and
-    libBloom.so.
+    libfasguardfilter.so.
 
 Build ASG:
 1)  Install the required build and runtime dependencies.  Assuming

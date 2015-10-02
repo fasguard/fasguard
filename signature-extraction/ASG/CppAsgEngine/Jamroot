@@ -12,7 +12,7 @@ if ! [ python.configured ]
 }
 
 lib
-  Bloom
+  fasguardfilter
   boost_log
   boost_python
   boost_regex
@@ -39,7 +39,7 @@ python-extension asg_engine_ext
     <library>boost_log
     <library>boost_regex
     <library>crypto++
-    <library>Bloom
+    <library>fasguardfilter
   ;
 
 # Put the extension and Boost.Python DLL in the current directory, so
