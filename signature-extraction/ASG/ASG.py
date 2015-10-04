@@ -20,6 +20,7 @@ import re
 import asg.asgEngine
 #import boost_log
 import ctypes
+import pkgutil
 import xml.etree.ElementTree as ET
 from asg.properties.envProperties import EnvProperties
 from asg.DetectorReports.detectorEvent import DetectorEvent
@@ -59,9 +60,7 @@ def setup():
     parser.add_argument('-s','--sqldb',required=False,action='store_true',
                         help='retrieve FASGuard STIX XML file from sql db')
     parser.add_argument('-p','--properties',type=str,required=False,
-                        default=os.path.join(os.path.dirname(__file__),
-                                             'asg.properties'),
-                        help='properties file')
+                        default=None, help='properties file')
 
     args = parser.parse_args()
     #print "In file: ",args.in_file
@@ -83,8 +82,11 @@ def setup():
     logger.addHandler(ch)
 
     logger.debug('debug message')
-    with open(args.properties, 'r') as f:
-        propdata = f.read()
+    if args.properties is None:
+        propdata = pkgutil.get_data('asg', 'asg.properties')
+    else:
+        with open(args.properties, 'r') as f:
+            propdata = f.read()
     properties = EnvProperties(propdata)
 
     if args.sqldb:
