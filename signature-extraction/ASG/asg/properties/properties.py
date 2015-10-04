@@ -218,21 +218,9 @@ class Properties(object):
 
         return newvalue
 
-    def load(self, stream):
-        """ Load properties from an open file stream """
-
-        # For the time being only accept file input streams
-        if type(stream) is not file:
-            raise TypeError,'Argument should be a file object!'
-        # Check for the opened mode
-        if stream.mode != 'r':
-            raise ValueError,'Stream should be opened in read-only mode!'
-
-        try:
-            lines = stream.readlines()
-            self.__parse(lines)
-        except IOError, e:
-            raise
+    def load(self, data):
+        """ Load properties from raw properties data"""
+        self.__parse(data.splitlines(True))
 
     def getProperty(self, key):
         """ Return a property for the given key """
@@ -306,7 +294,7 @@ class Properties(object):
 
 if __name__=="__main__":
     p = Properties()
-    p.load(open('test2.properties'))
+    p.load(open('test2.properties').read())
     p.list()
     print p
     print p.items()

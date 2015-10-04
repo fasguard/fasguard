@@ -83,7 +83,9 @@ def setup():
     logger.addHandler(ch)
 
     logger.debug('debug message')
-    properties = EnvProperties(args.properties)
+    with open(args.properties, 'r') as f:
+        propdata = f.read()
+    properties = EnvProperties(propdata)
 
     if args.sqldb:
         # Connect to database

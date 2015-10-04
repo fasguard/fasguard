@@ -23,20 +23,15 @@ class EnvProperties:
     This class expands environmenta variables in properties before inserting
     the properties in the properties.Properties class.
     """
-    def __init__(self, propertiesFile):
+    def __init__(self, propertiesData):
         """
         Constructor.
 
         Arguments:
-        propertiesFile - Path to properties
+        propertiesData - data from a properties file
         """
         self.propObj = properties.Properties()
-        try:
-            propFileObj = open(propertiesFile,"r")
-        except IOError as e:
-            logging.error("I/O error({0}): {1}".format(e.errno, e.strerror))
-            sys.exit('Open of '+propertiesFile+' failed')
-        self.propObj.load(propFileObj)
+        self.propObj.load(propertiesData)
     def getProperty(self, key):
         """
         Passes parameters to properties.Properties and then uses os.popen with
