@@ -17,15 +17,15 @@ import os
 import os.path
 import argparse
 import re
-import asgEngine
+import asg.asgEngine
 #import boost_log
 import ctypes
 import xml.etree.ElementTree as ET
-from properties.envProperties import EnvProperties
-from DetectorReports.detectorEvent import DetectorEvent
-from DetectorReports.detector_xmt_ext import DetectorReport
-from stixFromDb import StixFromDb
-from fasguardStixRule import FASGuardStixRule
+from asg.properties.envProperties import EnvProperties
+from asg.DetectorReports.detectorEvent import DetectorEvent
+from asg.DetectorReports.detector_xmt_ext import DetectorReport
+from asg.stixFromDb import StixFromDb
+from asg.fasguardStixRule import FASGuardStixRule
 
 def process_detection(filename,properties,debug):
     # de = DetectorEvent(filename)
@@ -41,7 +41,7 @@ def process_detection(filename,properties,debug):
     #                         attack_packet.Sport, attack_packet.Dport,
     #                         attack_packet.payload, attack_packet.probAttack)
     max_depth = int(properties.getProperty('ASG.MaxDepth'))
-    asg_e = asgEngine.PyAsgEngine(filename,properties,debug)
+    asg_e = asg.asgEngine.PyAsgEngine(filename,properties,debug)
     asg_e.loadDetectorEvent()
     asg_e.makeCandidateSignatureStringSet()
     #asg_e.makeTries()

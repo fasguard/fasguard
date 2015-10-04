@@ -42,7 +42,7 @@ import logging
 import sys
 import os
 import argparse
-from DetectorReports.detectorEvent import DetectorEvent
+from asg.DetectorReports.detectorEvent import DetectorEvent
 
 def handle_file(filename):
     de = DetectorEvent(filename)

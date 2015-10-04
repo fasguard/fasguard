@@ -1,2 +1,2 @@
-build-project CppAsgEngine ;
-build-project DetectorReports ;
+build-project asg/CppAsgEngine ;
+build-project asg/DetectorReports ;

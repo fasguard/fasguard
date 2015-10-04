@@ -29,8 +29,8 @@ import calendar
 import time
 import dpkt
 
-from CppAsgEngine.asg_engine_ext import AsgEngine;
-from DetectorReports.detectorEvent import DetectorEvent
+from asg.CppAsgEngine.asg_engine_ext import AsgEngine;
+from asg.DetectorReports.detectorEvent import DetectorEvent
 
 class PyAsgEngine:
     """

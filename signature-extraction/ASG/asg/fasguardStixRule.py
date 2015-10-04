@@ -43,7 +43,7 @@ class FASGuardStixRule:
         """
         logger = logging.getLogger('simple_example')
         self.logger = logger
-        self.logger.debug('In fasguardStixRule')
+        self.logger.debug('In asg.fasguardStixRule')
         stix_package = STIXPackage()
 
         # Build the Exploit Target
