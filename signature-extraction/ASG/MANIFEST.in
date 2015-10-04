@@ -1,0 +1,6 @@
+include asg/CppAsgEngine/*.h
+include asg/CppAsgEngine/*.hh
+include asg/CppAsgEngine/*.hpp
+include asg/DetectorReports/*.h
+include asg/DetectorReports/*.hh
+include asg/DetectorReports/*.hpp
