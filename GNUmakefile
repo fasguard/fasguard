@@ -14,7 +14,8 @@
 components := \
 	fasguard-ad-host-peering \
 	fasguardlib-ad-tx \
-	fasguardlib-filter
+	fasguardlib-filter \
+	signature-extraction/ASG
 
 # default target goes first
 all: $(components)
@@ -22,6 +23,7 @@ all: $(components)
 
 # component dependencies go here
 fasguard-ad-host-peering: fasguardlib-ad-tx
+signature-extraction/ASG: fasguardlib-filter
 
 # handy macros
 quote = '$(subst ','\'',$(1))'#'
