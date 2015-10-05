@@ -47,7 +47,10 @@ LIBFASGUARDLIB_AD_TX_RESOURCES = \
 	$(srcdir)/resources/fasguard_stix_packet_data_header \
 	$(srcdir)/resources/fasguard_stix_packet_footer \
 	$(srcdir)/resources/fasguard_stix_packet_header \
-	$(srcdir)/resources/fasguard_stix_packet_prob_attack_fmt \
+	$(srcdir)/resources/fasguard_stix_packet_keyword_link_type_fmt \
+	$(srcdir)/resources/fasguard_stix_packet_keyword_prob_attack_fmt \
+	$(srcdir)/resources/fasguard_stix_packet_keywords_footer \
+	$(srcdir)/resources/fasguard_stix_packet_keywords_header \
 	$(srcdir)/resources/fasguard_stix_packet_timestamp_timefmt
 
 EXTRA_DIST += \

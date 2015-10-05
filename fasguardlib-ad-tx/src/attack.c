@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pcap/pcap.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -171,7 +172,7 @@ static bool write_b64(
     static char const * const b64_alphabet =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"
-        "0123456798+/";
+        "0123456789+/";
     static char const b64_padding = '=';
     static size_t const b64_line_length = 64;
     static char const b64_eol = '\n';
@@ -595,7 +596,7 @@ fasguard_attack_instance_type fasguard_start_attack_instance(
         }
     }
 
-    instance = malloc(sizeof(struct fasguard_attack_instance));
+    instance = malloc(5*sizeof(struct fasguard_attack_instance));
     if (instance == NULL)
     {
         errno = ENOMEM;
@@ -617,9 +618,16 @@ fasguard_attack_instance_type fasguard_start_attack_instance(
     if (instance->instancefd == -1)
     {
         // errno set by mkstemp()
+      printf("instance->instancefd == -1. Going to error\n");
         goto error;
     }
-
+    if (instance->instancefd == 0)
+    {
+        // errno set by mkstemp()
+      printf("instance->instancefd == 0. Intance path is: %s.Press any char to continue >",instance->instancepath);
+      //int c = getchar();
+    }
+    printf("instancefd = %d\n",instance->instancefd);
     return instance;
 
 error:
@@ -628,6 +636,8 @@ error:
 
     if (instance != NULL)
     {
+      printf("About to free instance. Enter any character >");
+      //int c = getchar();
         free(instance->instancepath);
 
         if (instance->instancefd >= 0)
@@ -685,6 +695,10 @@ bool fasguard_end_attack_instance(
             goto done_writing;
         }
 
+        /* printf("About to write to %d size %d\n", */
+        /*        instance->attack_group->allfd,readed); */
+        //printf("Enter char to continue>");
+        //int c = getchar();
         written = write(instance->attack_group->allfd, buf,
             (size_t)readed);
         if (written < 0)
@@ -731,16 +745,28 @@ done_writing:
     return errno == 0;
 }
 
+static int pkt_cnt = 0;
 bool fasguard_add_packet_to_attack_instance(
     fasguard_attack_instance_type _instance,
     size_t packet_length,
     uint8_t const * packet,
+    size_t l3_offset,
     fasguard_option_type const * options)
 {
+  printf("Pkt lngth: %d\n",packet_length);
+  char filename[256];
+  if(packet_length > 1000)
+    {
+      sprintf(filename,"/tmp/hp-pkt-%d.dat",pkt_cnt++);
+      FILE *fh = fopen(filename,"w");
+      fwrite(packet,packet_length,1,fh);
+      fclose(fh);
+    }
     struct fasguard_attack_instance * instance =
         (struct fasguard_attack_instance *)_instance;
     struct timeval const * timestamp = NULL;
     double probability_attack = -1.0;
+    char const * link_type = NULL;
     ssize_t written;
 
     for (size_t i = 0;
@@ -757,12 +783,31 @@ bool fasguard_add_packet_to_attack_instance(
                 probability_attack = options[i].value.double_val;
                 break;
 
+            case FASGUARD_OPTION_LAYER2_TYPE:
+                switch (options[i].value.int_val)
+                {
+                    case DLT_EN10MB:
+                        link_type = "ethernet";
+                        break;
+
+                    default:
+                        // The link type is unsupported, so we'll
+                        // strip the layer 2 header.
+                        link_type = NULL;
+                        break;
+                }
+                break;
+
             default:
                 errno = EINVAL;
                 return NULL;
         }
     }
 
+    printf("About to write packet to instancefd: %d\n",
+           instance->instancefd);
+    printf("Enter char to continue>");
+    //int c = getchar();
     written = write(instance->instancefd, fasguard_stix_packet_header,
         fasguard_stix_packet_header_strlen);
     if (written < 0)
@@ -776,10 +821,56 @@ bool fasguard_add_packet_to_attack_instance(
         return false;
     }
 
+    written = write(instance->instancefd,
+        fasguard_stix_packet_keywords_header,
+        fasguard_stix_packet_keywords_header_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if (
+        (size_t)written != fasguard_stix_packet_keywords_header_strlen)
+    {
+        errno = EIO;
+        return false;
+    }
+
+    if (link_type != NULL)
+    {
+        char * link_type_str = sprintf_alloc(
+            (char const *)fasguard_stix_packet_keyword_link_type_fmt,
+            link_type);
+        if (link_type_str == NULL)
+        {
+            // errno set by sprintf_alloc()
+            return false;
+        }
+
+        size_t const link_type_strlen = strlen(link_type_str);
+
+        written = write(instance->instancefd, link_type_str,
+            link_type_strlen);
+        int errno_save = errno;
+
+        free(link_type_str);
+
+        if (written < 0)
+        {
+            errno = errno_save;
+            return false;
+        }
+        else if ((size_t)written != link_type_strlen)
+        {
+            errno = EIO;
+            return false;
+        }
+    }
+
     if (probability_attack >= 0.0 && probability_attack <= 1.0)
     {
         char * probability_attack_str = sprintf_alloc(
-            (char const *)fasguard_stix_packet_prob_attack_fmt,
+            (char const *)fasguard_stix_packet_keyword_prob_attack_fmt,
             probability_attack);
         if (probability_attack_str == NULL)
         {
@@ -806,6 +897,21 @@ bool fasguard_add_packet_to_attack_instance(
             errno = EIO;
             return false;
         }
+    }
+
+    written = write(instance->instancefd,
+        fasguard_stix_packet_keywords_footer,
+        fasguard_stix_packet_keywords_footer_strlen);
+    if (written < 0)
+    {
+        // errno set by write()
+        return false;
+    }
+    else if (
+        (size_t)written != fasguard_stix_packet_keywords_footer_strlen)
+    {
+        errno = EIO;
+        return false;
     }
 
     if (timestamp != NULL)
@@ -870,10 +976,26 @@ bool fasguard_add_packet_to_attack_instance(
         return false;
     }
 
-    if (!write_b64(instance->instancefd, packet, packet_length))
+    if (link_type == NULL)
     {
-        // errno set by write_b64()
-        return false;
+        // Unsupported link type or no link headers, so only write
+        // layers 3 and up.
+        if (!write_b64(instance->instancefd, packet + l3_offset,
+            packet_length - l3_offset))
+        {
+            // errno set by write_b64()
+            return false;
+        }
+    }
+    else
+    {
+        // Supported link type, so write the whole packet, including
+        // layer 2 headers.
+        if (!write_b64(instance->instancefd, packet, packet_length))
+        {
+            // errno set by write_b64()
+            return false;
+        }
     }
 
     written = write(instance->instancefd, fasguard_stix_packet_data_footer,

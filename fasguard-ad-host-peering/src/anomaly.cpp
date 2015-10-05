@@ -33,7 +33,7 @@
     per-generation processing would have to be performed more frequently.
 */
 static struct timeval const GENERATION_INTERVAL = {
-    .tv_sec = 60,
+    .tv_sec = 25,
     .tv_usec = 0,
 };
 
@@ -79,7 +79,8 @@ static struct timeval const GENERATION_INTERVAL = {
     though only values close to 0.0 are useful. The closer to 0.0 it
     is, the fewer detections there will be.
 */
-#define ANOMALOUS_THRESHOLD 4e-9
+//#define ANOMALOUS_THRESHOLD 4e-9
+#define ANOMALOUS_THRESHOLD 0.1
 
 
 AnomalyDetector::AnomalyDetector()

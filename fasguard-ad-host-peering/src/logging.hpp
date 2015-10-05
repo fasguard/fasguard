@@ -58,7 +58,7 @@
 #define LOG_PERROR_R(priority, format, ...) \
     do \
     { \
-        char _log_perror_buf[256]; \
+        char _log_perror_buf[512]; \
         if (strerror_r(errno, _log_perror_buf, \
             sizeof(_log_perror_buf)) == 0) \
         { \

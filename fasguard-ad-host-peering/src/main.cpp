@@ -9,6 +9,9 @@
 #include <new>
 #include <pcap/pcap.h>
 #include <unordered_map>
+#include <map>
+#include <iostream>
+#include <stdlib.h>
 
 #include <fasguardlib-ad-tx.h>
 
@@ -75,6 +78,7 @@ struct attack_group_data_t
         @brief Map from IP to attack instance.
     */
     std::unordered_map<IPAddress, fasguard_attack_instance_type> instances;
+  //std::map<IPAddress, fasguard_attack_instance_type> instances;
 };
 
 /**
@@ -122,6 +126,9 @@ struct packet_callback_data_t
         @brief Map from IP to attack group.
     */
     std::unordered_map<IPAddress, attack_group_data_t> attack_groups;
+
+  fasguard_attack_group_type group;
+  fasguard_attack_instance_type instance;
 
 };
 
@@ -209,12 +216,20 @@ static void handle_attacks(
     if (instance_it != group->instances.end())
     {
         instance = &instance_it->second;
+        std::cout << "Found instance for " << ip2.toString() << std::hex
+                  << " " << instance <<
+          std::endl;
+        printf("Enter char to continue>");
+        //int c = getchar();
     }
     else
     {
         instance = fasguard_start_attack_instance(
             group->group,
             NULL);
+        std::cout << "About to add instance " << std::hex << instance << " to group for " <<
+          ip2.toString() << std::endl;
+        //int c = getchar();
         if (instance == NULL)
         {
             LOG_PERROR_R(LOG_WARNING,
@@ -224,7 +239,8 @@ static void handle_attacks(
 
             return;
         }
-
+        std::cout << "Added" << std::endl;
+        //c = getchar();
         group->instances[ip2] = instance;
     }
 
@@ -248,13 +264,24 @@ static void handle_attacks(
             .value = { .double_val = 0.42 },
         },
 
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_LAYER2_TYPE,
+            .value = {
+                .int_val =
+                    pcap_datalink(packet_callback_data->pcap_handle),
+                },
+        },
+
         fasguard_end_of_options,
     };
 
     if (!fasguard_add_packet_to_attack_instance(
         instance,
-        pcap_header->caplen - layer2_hlen,
-        packet + layer2_hlen,
+        pcap_header->caplen,
+        packet,
+        layer2_hlen,
         packet_options))
     {
         LOG_PERROR_R(LOG_WARNING,
@@ -269,11 +296,15 @@ static void handle_attacks(
 
     This function is suitable for passing as the callback to pcap_loop.
 */
+
+static int pkt_cnt = 0;
+
 static void packet_callback(
     uint8_t * user,
     struct pcap_pkthdr const * h,
     uint8_t const * bytes)
 {
+  printf("Pkt Cnt %d\n",pkt_cnt++);
     packet_callback_data_t * packet_callback_data =
         (packet_callback_data_t *)user;
 
@@ -289,14 +320,63 @@ static void packet_callback(
         srcAddress, dstAddress,
         h->caplen - layer2_hlen, bytes + layer2_hlen))
     {
-        handle_attacks(
-            packet_callback_data,
-            srcAddress, dstAddress,
-            h, layer2_hlen, bytes);
-        handle_attacks(
-            packet_callback_data,
-            dstAddress, srcAddress,
-            h, layer2_hlen, bytes);
+      struct pcap_pkthdr const * pcap_header = h;
+      auto packet = bytes;
+        bool const anomalous =
+            packet_callback_data->anomaly_detector->is_anomalous(srcAddress)
+            ||
+        packet_callback_data->anomaly_detector->is_anomalous(dstAddress);
+
+        if (anomalous)
+          {
+    fasguard_option_type const packet_options[] = {
+        // Set the timestamp from the pcap header.
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_TIMESTAMP,
+            .value = { .pointer_val = &pcap_header->ts },
+        },
+
+        // Hard-code the probability that the packet is malicious.
+        // A real implementation would set this to a value between
+        // 0.0 and 1.0 based on how evil the packet appears to be.
+        // We include this option solely to demonstrate its use.
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_PROBABILITY_MALICIOUS,
+            .value = { .double_val = 0.42 },
+        },
+
+        {
+            .flags = 0,
+            .reserved = 0,
+            .key = FASGUARD_OPTION_LAYER2_TYPE,
+            .value = {
+                .int_val =
+                    pcap_datalink(packet_callback_data->pcap_handle),
+                },
+        },
+
+        fasguard_end_of_options,
+    };
+
+    if (!fasguard_add_packet_to_attack_instance(
+        packet_callback_data->instance,
+        pcap_header->caplen,
+        packet,
+        layer2_hlen,
+        packet_options))
+    {
+        LOG_PERROR_R(LOG_WARNING,
+            "Could not add packet to attack instance %s -> %s",
+            srcAddress.toString().c_str(),
+            dstAddress.toString().c_str());
+    }
+          }
+
+
     }
 }
 
@@ -324,14 +404,17 @@ int main(
     char const * interface = default_interface;
     char const * output_directory = NULL;
     char const * savefile = NULL;
+    char const * pkts_num_str = NULL;
+    int pkts_num = 10000;
 
-    static char const options[] = "f:hi:o:r:";
+    static char const options[] = "f:hi:o:r:p:";
     static struct option const long_options[] = {
         {"filter", required_argument, NULL, 'f'},
         {"help", no_argument, NULL, 'h'},
         {"interface", required_argument, NULL, 'i'},
         {"output", required_argument, NULL, 'o'},
         {"read", required_argument, NULL, 'r'},
+        {"pkts", optional_argument, NULL, 'p'},
         {NULL, 0, NULL, 0},
     };
 
@@ -359,10 +442,14 @@ int main(
             case 'r':
                 savefile = optarg;
                 break;
-
-            default:
-                ret = EXIT_FAILURE;
-                goto done;
+        case 'p':
+          pkts_num_str = optarg;
+          pkts_num = atoi(pkts_num_str);
+          std::cout << "Pkts num is " << pkts_num << std::endl;
+          break;
+        default:
+          ret = EXIT_FAILURE;
+          goto done;
         }
     }
 
@@ -499,10 +586,31 @@ int main(
         ret = EXIT_FAILURE;
         goto done;
     }
+        packet_callback_data.group = fasguard_start_attack_group(
+            packet_callback_data.attack_output,
+            NULL);
+        if (packet_callback_data.group == NULL)
+        {
+            LOG_PERROR_R(LOG_WARNING,
+                "Could not start attack group");
 
+            ret = EXIT_FAILURE;
+            goto done;
+        }
+        packet_callback_data.instance = fasguard_start_attack_instance(
+            packet_callback_data.group,
+            NULL);
+        if (packet_callback_data.instance == NULL)
+        {
+            LOG_PERROR_R(LOG_WARNING,
+                "Could not start attack instance");
+
+            ret = EXIT_FAILURE;
+            goto done;
+        }
 
     // Sniff packets and run the anomaly detector.
-    pcap_loop_ret = pcap_loop(packet_callback_data.pcap_handle, -1,
+    pcap_loop_ret = pcap_loop(packet_callback_data.pcap_handle, pkts_num,
         packet_callback, (uint8_t *)&packet_callback_data);
     if (pcap_loop_ret == -1)
     {
@@ -528,30 +636,18 @@ done:
         delete packet_callback_data.anomaly_detector;
     }
 
-    for (auto group_pair : packet_callback_data.attack_groups)
-    {
-        for (auto instance_pair : group_pair.second.instances)
-        {
-            if (!fasguard_end_attack_instance(instance_pair.second))
+            if (!fasguard_end_attack_instance(packet_callback_data.instance))
             {
                 LOG_PERROR_R(LOG_ERR,
-                    "Could not end attack instance %s -> %s",
-                    group_pair.first.toString().c_str(),
-                    instance_pair.first.toString().c_str());
+                    "Could not end attack instance");
                 ret = EXIT_FAILURE;
             }
-        }
-        group_pair.second.instances.clear();
-
-        if (!fasguard_end_attack_group(group_pair.second.group))
+        if (!fasguard_end_attack_group(packet_callback_data.group))
         {
             LOG_PERROR_R(LOG_ERR,
-                "Could not end attack group %s",
-                group_pair.first.toString().c_str());
+                "Could not end attack group");
             ret = EXIT_FAILURE;
         }
-    }
-    packet_callback_data.attack_groups.clear();
 
     if (packet_callback_data.attack_output != NULL)
     {

@@ -20,11 +20,15 @@ AC_PROG_MAKE_SET
 AC_PROG_LN_S
 
 
+AC_SEARCH_LIBS([pcap_open_live], [pcap], [], [
+    AC_MSG_FAILURE([libpcap is required])
+])
+
 AC_SEARCH_LIBS([uuid_generate], [uuid], [], [
     AC_MSG_FAILURE([libuuid is required])
 ])
 
-AC_CHECK_HEADERS([uuid/uuid.h], [], [
+AC_CHECK_HEADERS([pcap/pcap.h uuid/uuid.h], [], [
     AC_MSG_FAILURE([a required header file is missing or does not compile properly])
 ])
 
