@@ -6,7 +6,7 @@ using namespace std;
 
 namespace fasguard
 {
-BloomPacketEngine::BloomPacketEngine(BloomFilter &b_filter,
+BloomPacketEngine::BloomPacketEngine(BloomFilterBase &b_filter,
                                      int min_hor,int max_hor,bool stat_flag) :
   m_bf(b_filter),m_min_hor(min_hor),
   m_max_hor(max_hor),m_stat_flag(stat_flag)
@@ -16,6 +16,7 @@ BloomPacketEngine::BloomPacketEngine(BloomFilter &b_filter,
 BloomPacketEngine::~BloomPacketEngine()
 {}
 
+  static long int tot_num_insert = 0;
 void
 BloomPacketEngine::insertPacket(const unsigned char *str,int lgth)
 {
@@ -59,6 +60,8 @@ BloomPacketEngine::insertPacket(const unsigned char *str,int lgth)
           else
             {
               m_bf.insert(cur,i);
+              tot_num_insert++;
+              num_insertions++;
             }
         }
       cur++;
@@ -68,19 +71,26 @@ BloomPacketEngine::insertPacket(const unsigned char *str,int lgth)
       cout << dec << num_new_insertions << " new insertions out of "
            << num_insertions << endl;
     }
-  unsigned int e_above = m_bf.entryAbove(1);
-  if(e_above > 1)
-    {
-      //cout << "Entry above 1 is " << e_above << endl;
-    }
   else
     {
-      cout << "FAILED ENTRY ABOVE TEST" << endl;
+      // cout << dec << "TOTAL num insertions "
+      //           << tot_num_insert << endl;
     }
+  // unsigned int e_above = m_bf.entryAbove(1);
+  // if(e_above > 1)
+  //   {
+  //     //cout << "Entry above 1 is " << e_above << endl;
+  //   }
+  // else
+  //   {
+  //     cout << "FAILED ENTRY ABOVE TEST" << endl;
+  //   }
 }
 
   bool BloomPacketEngine::flush(const std::string &filename)
 {
+  m_bf.signalDone();
+  m_bf.threadsCompleted();
   unsigned int e_above = m_bf.entryAbove(1);
   if(e_above > 1)
     {

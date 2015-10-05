@@ -1,3 +1,4 @@
+OUTDATED. See README.
 * Directory Organization
 
   * ~fasguard-benign-traffic-collection~

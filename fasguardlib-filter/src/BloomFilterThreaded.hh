@@ -1,27 +1,33 @@
-#ifndef BLOOM_FILTER_HH
-#define BLOOM_FILTER_HH
+#ifndef BLOOM_FILTER_THREADED_HH
+#define BLOOM_FILTER_THREADED_HH
 #include <vector>
 #include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include "lru_cache_using_std.h"
-#include "BenignNgramStorage.hh"
+#include <boost/thread/thread.hpp>
+#include <boost/lockfree/queue.hpp>
 #include "BloomFilterBase.hh"
+#include "HashThread.hh"
 
+std::vector<HashThread> ht_vec;
+
+//boost::shared_ptr<std::vector<uint64_t> >
+//calcBitIndeces(std::string ngram);
 /**
  * @brief Implementation of Bloom filter for ngrams.
  *
  * This stores a Bloom filter for a range of ngram sizes from the payload of
  * large numbers of packets for a single TCP or UDP service.
  */
-class BloomFilter : public BloomFilterBase
+class BloomFilterThreaded : public BloomFilterBase
 {
 public:
   /**
    * Constructor. This accepts parameters that specify the benign traffic
    * to be stored in the Bloom filter as well as parameters for the sizing of
    * the Bloom filter. This constructor is used for the initial construction
-   * of a BloomFilter object, not restoring a BloomFilter object from
+   * of a BloomFilterThreaded object, not restoring a BloomFilterThreaded object from
    * persistant store.
    * @param projected_items Number of items that will potentially be inserted
    *    into the Bloom filter. Used for Bloom filter sizing.
@@ -33,20 +39,20 @@ public:
    * @param min_ngram_size The minimum number of bytes in a stored ngram.
    * @param max_ngram_size The maximum number of bytes in a stored ngram.
    */
-  BloomFilter(size_t inserted_items, double probability_false_positive,
+  BloomFilterThreaded(size_t inserted_items, double probability_false_positive,
               int ip_protocol_num, int port_num, int min_ngram_size,
-              int max_ngram_size);
+                      int max_ngram_size,int thread_num);
   /**
    * Constructor for restoring Bloom filter from persistent store.
    * @param filename Name of file containing persistent Bloom filter.
    * @param from_mem_p If true, Bloom filter data is loaded in memory. If
    *    false, file is accesed for each Bloom filter bit using fseek.
    */
-  BloomFilter(const std::string &filename,bool from_mem_p);
+  BloomFilterThreaded(const std::string &filename,bool from_mem_p);
   /**
    * Destructor.
    */
-  ~BloomFilter();
+  ~BloomFilterThreaded();
   /**
    * Insert ngrams extracted from a string into the storage data structure.
    * @param data The content from the packet.
@@ -66,7 +72,7 @@ public:
    * Flush the data structure to a file.
    * @param filename Name of file used for persistence.
    */
-  virtual bool flush(std::string filename);
+  //virtual bool flush(std::string filename);
 
   /**
    * Returns the first value in the Bloom filter that's above the input value.
@@ -77,16 +83,37 @@ public:
   unsigned int entryAbove(unsigned int val);
 
   /**
-   * Writes out a Bloom filter that is a combination of the current BloomFilter
-   * and a BloomFilter given as a first argument.
+   * Writes out a Bloom filter that is a combination of the current BloomFilterThreaded
+   * and a BloomFilterThreaded given as a first argument.
    * @param other Other Bloom filter to combine with.
    * @param output_file Filename into which result Bloom Filter will be written.
    */
-  void WriteCombined(BloomFilter &other,std::string output_file);
+  void WriteCombined(BloomFilterThreaded &other,std::string output_file);
+
+  void signalDone()
+  {
+    m_ngram_done = true;
+  }
+
+  void threadsCompleted()
+  {
+    while(m_shutdown_thread_count < m_thread_num)
+      {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(HashThread::SleepTimeMilS));
+      }
+  }
+
+  bool bloomInsertionDone()
+  {
+    return m_bloom_insertion_done;
+  }
   static const unsigned int MAX_HASHES = 512;
   static const unsigned int CHAR_SIZE_BITS = 8;
   static const uint32_t HeaderLengthInBytes = 4096;
   static const unsigned int NUM_CACHE_ENTRIES = 200000;
+  static const unsigned int NgramQueueLength = 65534;
+  static const unsigned int BloomFilterThreadedOffsetQueueLength = 65534;
+  //static const unsigned int NumThreads = 2;
 
   /**
      @brief Type to use for the length (in bits) of a bloom filter
@@ -100,11 +127,21 @@ public:
 
 protected:
 
-  boost::shared_ptr<lru_cache_using_std<
-                      CalcBitIndeces,
-                      std::string,boost::shared_ptr<std::vector<uint64_t> >,
-                      boost::unordered_map> > m_cache;
-  CalcBitIndeces m_calc_bit_indeces;
+  std::vector<boost::shared_ptr<HashThread> > m_thread_list;
+  boost::thread_group m_ngram_hashers;
+  boost::thread_group m_bloom_insert;
+  boost::atomic<bool> m_ngram_done;
+  boost::atomic<unsigned int> m_shutdown_thread_count;
+  boost::atomic<bool> m_bloom_insertion_done;
+  int m_thread_num;
+   // Queue of ngrams to process
+
+  // Queue of vectors of Bloom filter offsets
+
+  //boost::lockfree::queue<uint64_t>
+  //m_bfilt_offset_q(128);
 
 };
+
+
 #endif

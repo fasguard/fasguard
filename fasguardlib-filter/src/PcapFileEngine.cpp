@@ -1,19 +1,38 @@
 #include <boost/log/trivial.hpp>
 #include <iostream>
+#include <boost/thread/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "PcapFileEngine.hpp"
 #include "BloomPacketEngine.hpp"
 
 namespace fasguard
 {
   PcapFileEngine::PcapFileEngine(const std::vector<std::string> pcap_filenames,
-                                 BloomFilter &b_filter,int min_depth,
+                                 BloomFilterBase &b_filter,int min_depth,
                                  int max_depth) :
-    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth,true)
+    m_b_filter(b_filter),m_b_pkt_eng(b_filter,min_depth,max_depth,false),
+    m_bytes_processed(0)
   {
     for (const std::string &p_file : pcap_filenames)
       {
         fillBloom(p_file);
       }
+    BOOST_LOG_TRIVIAL(debug) << "Finished input packets " <<
+      std::endl;
+
+    m_b_filter.signalDone();
+
+    // Wait for bloom insertion to complete
+
+    while(!b_filter.bloomInsertionDone())
+      {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(SleepTimeMilS));
+
+      }
+
+    // Record number of bytes inserted into Bloom Filter
+
+    m_b_filter.setNumBytesProcessed(m_bytes_processed);
   }
 
   void PcapFileEngine::fillBloom(std::string pcap_filename)
@@ -99,17 +118,19 @@ PcapFileEngine::processFile(const std::string& filename)
                      payload_len);
 
     // accumulate bytes_processed with the length of the current payload
-    bytes_processed += payload_len;
-    if(bytes_processed > next_report_bytes)
+    m_bytes_processed += payload_len;
+    if(m_bytes_processed > next_report_bytes)
       {
         BOOST_LOG_TRIVIAL(info)
-          << "Bytes Processed: " << bytes_processed << std::endl;
+          << "Bytes Processed: " << m_bytes_processed << std::endl;
         next_report_bytes += BytesProcessedDelta;
       }
 
   } while(true);
 
   closePcap(p);
+  BOOST_LOG_TRIVIAL(info)
+    << "Finsished processing: " << filename << std::endl;
 
   return(true);
 }

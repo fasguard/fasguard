@@ -1,0 +1,19 @@
+Directory organization:
+
+fasguard-benign-traffic-collection
+    Tools for collecting benign traffic to be used in Bloom filters.
+
+fasguard-ad-host-peering
+    Host peering sensor.
+
+fasguardlib-ad-tx
+    Library to support host peering.
+
+fasguardlib-filter
+    Tools for producing Bloom filters.
+
+signature-extraction
+    Tools for automatic signature extraction.
+
+taxii-communications
+    Tools for transmitting and receiving STIX over TAXII channels.

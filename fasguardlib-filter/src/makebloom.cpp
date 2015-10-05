@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <iterator>
 #include <pcap.h>
-#include "BloomFilter.hh"
+#include "BloomFilterUnthreaded.hh"
+#include "BloomFilterThreaded.hh"
 #include "PcapFileEngine.hpp"
 //#include "MurmurHash3.h"
 
@@ -43,6 +44,9 @@ main(int argc, char *argv[])
   int port_num;
   int min_depth;
   int max_depth;
+  int thread_num;
+  bool merge_flag;
+  bool thread_flag;
   std::string out_file;
 
   po::variables_map vm;
@@ -51,7 +55,11 @@ main(int argc, char *argv[])
     {
       po::options_description desc("");
       desc.add_options()
-        ("help", "produce help message")
+        ("help,h", "produce help message")
+        ("merge,m", po::bool_switch(&merge_flag)->default_value(false),
+         "Mode for merging two Bloom filters into one")
+        ("thread,t", po::bool_switch(&thread_flag)->default_value(false),
+         "Run the multithreaded version")
         ("prob-fa", po::value<double>(&pfa)->default_value(0.00001),
          "desired probability of false alarm")
         ("num-insertions,n",
@@ -63,6 +71,9 @@ main(int argc, char *argv[])
         ("port-num",
          po::value<int>(&port_num)->default_value(80),
          "TCP/UDP port number")
+        ("thread-num,T",
+         po::value<int>(&thread_num)->default_value(2),
+         "Number of threads")
         ("min-depth",
          po::value<int>(&min_depth)->default_value(4),
          "Minimum ngram size")
@@ -149,19 +160,47 @@ main(int argc, char *argv[])
   // fasguard::bloom_filter_statistics
   //   *bfs_ptr = new fasguard::bloom_filter_statistics();
 
-  BloomFilter bf(num_insertions,pfa,ip_proto,port_num,min_depth,
-                 max_depth);
+  if(merge_flag)
+    {
+      BloomFilterUnthreaded bf1((vm["pcap-file"].as< vector<string> >())[0],
+                                false);
+      BloomFilterUnthreaded bf2(vm["pcap-file"].as< vector<string> >()[1],
+                                false);
+      bf1.WriteCombined(bf2,out_file);
+      return 0;
+    }
+
+  BloomFilterBase *bf;
+
+  if (thread_flag)
+    {
+      bf = new BloomFilterThreaded(num_insertions,pfa,ip_proto,port_num,
+                                   min_depth,
+                                   max_depth,
+                                   thread_num);
+    }
+  else
+    {
+      bf = new BloomFilterUnthreaded(num_insertions,pfa,ip_proto,port_num,
+                                     min_depth,
+                                     max_depth);
+    }
+
+  // BloomFilter bf(num_insertions,pfa,ip_proto,port_num,min_depth,
+  //             max_depth);
 
   //delete bfp_ptr;
   //delete bfs_ptr;
 
   //bf.initialize(out_file);
 
+
   fasguard::PcapFileEngine pfe(vm["pcap-file"].as< vector<string> >(),
-                           bf,min_depth,max_depth);
+                           *bf,min_depth,max_depth);
 
   BOOST_LOG_TRIVIAL(debug)  << "Before makebloom flush " <<
     std::endl;
-  bf.flush(out_file);
+  bf->flush(out_file);
+  delete bf;
   return 0;
 }

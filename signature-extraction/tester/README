@@ -1,0 +1,3 @@
+Various testing scripts. The 'End2End' tests bring up multiple windows in which
+the attack report transmitter, attack report receiver, ASG, rule transmitter,
+rule receiver and rule injector are run.

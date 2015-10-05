@@ -1,0 +1,62 @@
+# Copyright David Abrahams 2006. Distributed under the Boost
+# Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+import python ;
+
+if ! [ python.configured ]
+{
+    ECHO "notice: no Python configured in user-config.jam" ;
+    ECHO "notice: will use default configuration" ;
+    using python ;
+}
+
+# Specify the path to the Boost project.  If you move this project,
+# adjust this path to refer to the Boost root directory.
+use-project boost
+#  : /home/dwyschogrod/boost/boost_1_57_0 ;
+#  : /usr/local/share/boost-build ;
+  : ../../../../../boost-standalone/boost_1_59_0 ;
+#  : ../../../../../boost-local ;
+#  : /home/danw/boost/boost-build
+
+# Set up the project-wide requirements that everything uses the
+# boost_python library from the project whose global ID is
+# /boost/python.
+project
+  : requirements <library>/boost/python//boost_python
+                 <library-file>/home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src/libBloom.so
+                 <implicit-dependency>/boost//headers
+                 <include>/home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src
+                 <include>../../../../../boost-local/include
+                 <toolset>gcc:<cxxflags>-std=gnu++0x
+                 <toolset>gcc:<cxxflags>-D=BOOST_LOG_DYN_LINK
+                 <toolset>gcc:<cxxflags>-D=BOOST_REGEX_DYN_LINK
+                 <toolset>clang:<cxxflags>-std=c++11
+#                /usr/local/lib/libboost_log.so.1.57.0
+  : usage-requirements <implicit-dependency>/boost//headers
+  ;
+
+# Declare the three extension modules.  You can specify multiple
+# source files after the colon separated by spaces.
+#python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp Trie.cpp SuricataRuleMaker.cpp SmlLrgSigExtrct.cpp ../DetectorReports/DetectorReport.cpp ../../../fasguardlib-filter/src/MurmurHash3.cpp ../../../fasguardlib-filter/src/BloomFilter.cpp ../../../fasguardlib-filter/src/BenignNgramStorage.cpp ../../../fasguardlib-filter/src/filter.cpp ../../../../../boost-local/lib/libboost_log.so.1.59.0 ../../../../../boost-local/lib/libboost_regex.so.1.59.0 /usr/lib/libcrypto++.so.9.0.0 ;
+python-extension asg_engine_ext : AsgEngine.cpp Trie.cpp AbstractTrieNode.cpp Dendrogram.cpp LocalAlignment.cpp RegexExtractorLCSS.cpp Trie.cpp SuricataRuleMaker.cpp SmlLrgSigExtrct.cpp ../DetectorReports/DetectorReport.cpp ../../../../../boost-local/lib/libboost_log.so.1.59.0  ../../../../../boost-local/lib/libboost_regex.so.1.59.0 /usr/lib/libcrypto++.so.9.0.0 /home/dwyschogrod/fasguard-git/fasguard/fasguardlib-filter/src/libBloom.so  ;
+
+# Put the extension and Boost.Python DLL in the current directory, so
+# that running script by hand works.
+install convenient_copy
+  : asg_engine_ext
+  : <install-dependencies>on <install-type>SHARED_LIB <install-type>PYTHON_EXTENSION
+    <location>.
+  ;
+
+# A little "rule" (function) to clean up the syntax of declaring tests
+# of these extension modules.
+local rule run-test ( test-name : sources + )
+{
+    import testing ;
+    testing.make-test run-pyd : $(sources) : : $(test-name) ;
+}
+
+# Declare test targets
+run-test asg_engine : asg_engine_ext ../testASG.py ;

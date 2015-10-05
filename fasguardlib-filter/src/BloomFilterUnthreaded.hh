@@ -1,5 +1,5 @@
-#ifndef BLOOM_FILTER_HH
-#define BLOOM_FILTER_HH
+#ifndef BLOOM_FILTER_UNTHREADED_HH
+#define BLOOM_FILTER_UNTHREADED_HH
 #include <vector>
 #include <fstream>
 #include <boost/shared_ptr.hpp>
@@ -14,14 +14,14 @@
  * This stores a Bloom filter for a range of ngram sizes from the payload of
  * large numbers of packets for a single TCP or UDP service.
  */
-class BloomFilter : public BloomFilterBase
+class BloomFilterUnthreaded : public BloomFilterBase
 {
 public:
   /**
    * Constructor. This accepts parameters that specify the benign traffic
    * to be stored in the Bloom filter as well as parameters for the sizing of
    * the Bloom filter. This constructor is used for the initial construction
-   * of a BloomFilter object, not restoring a BloomFilter object from
+   * of a BloomFilterUnthreaded object, not restoring a BloomFilterUnthreaded object from
    * persistant store.
    * @param projected_items Number of items that will potentially be inserted
    *    into the Bloom filter. Used for Bloom filter sizing.
@@ -33,7 +33,7 @@ public:
    * @param min_ngram_size The minimum number of bytes in a stored ngram.
    * @param max_ngram_size The maximum number of bytes in a stored ngram.
    */
-  BloomFilter(size_t inserted_items, double probability_false_positive,
+  BloomFilterUnthreaded(size_t inserted_items, double probability_false_positive,
               int ip_protocol_num, int port_num, int min_ngram_size,
               int max_ngram_size);
   /**
@@ -42,11 +42,11 @@ public:
    * @param from_mem_p If true, Bloom filter data is loaded in memory. If
    *    false, file is accesed for each Bloom filter bit using fseek.
    */
-  BloomFilter(const std::string &filename,bool from_mem_p);
+  BloomFilterUnthreaded(const std::string &filename,bool from_mem_p);
   /**
    * Destructor.
    */
-  ~BloomFilter();
+  ~BloomFilterUnthreaded();
   /**
    * Insert ngrams extracted from a string into the storage data structure.
    * @param data The content from the packet.
@@ -66,7 +66,7 @@ public:
    * Flush the data structure to a file.
    * @param filename Name of file used for persistence.
    */
-  virtual bool flush(std::string filename);
+  //virtual bool flush(std::string filename);
 
   /**
    * Returns the first value in the Bloom filter that's above the input value.
@@ -76,17 +76,10 @@ public:
    */
   unsigned int entryAbove(unsigned int val);
 
-  /**
-   * Writes out a Bloom filter that is a combination of the current BloomFilter
-   * and a BloomFilter given as a first argument.
-   * @param other Other Bloom filter to combine with.
-   * @param output_file Filename into which result Bloom Filter will be written.
-   */
-  void WriteCombined(BloomFilter &other,std::string output_file);
   static const unsigned int MAX_HASHES = 512;
   static const unsigned int CHAR_SIZE_BITS = 8;
   static const uint32_t HeaderLengthInBytes = 4096;
-  static const unsigned int NUM_CACHE_ENTRIES = 200000;
+  static const unsigned int NUM_CACHE_ENTRIES = 100000;
 
   /**
      @brief Type to use for the length (in bits) of a bloom filter
@@ -100,10 +93,10 @@ public:
 
 protected:
 
-  boost::shared_ptr<lru_cache_using_std<
-                      CalcBitIndeces,
-                      std::string,boost::shared_ptr<std::vector<uint64_t> >,
-                      boost::unordered_map> > m_cache;
+  // boost::shared_ptr<lru_cache_using_std<
+  //                  CalcBitIndeces,
+  //                  std::string,std::vector<uint64_t>,
+  //                  boost::unordered_map> > m_cache;
   CalcBitIndeces m_calc_bit_indeces;
 
 };
