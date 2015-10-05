@@ -1,6 +1,7 @@
 #ifndef BENIGN_NGRAM_STORAGE_HH
 #define  BENIGN_NGRAM_STORAGE_HH
 #include <map>
+#include <string>
 #include <inttypes.h>
 /**
  * @brief This is an abstract base class that defines the interface for any
