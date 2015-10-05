@@ -13,6 +13,7 @@
 # components (dependencies are specified after the 'all' target below)
 components := \
 	fasguard-ad-host-peering \
+	fasguard-pcap \
 	fasguardlib-ad-tx \
 	fasguardlib-filter \
 	signature-extraction/ASG
