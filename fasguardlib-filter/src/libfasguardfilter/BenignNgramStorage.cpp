@@ -6,6 +6,12 @@
 #include <sstream>
 #include <fasguardfilter/BenignNgramStorage.hh>
 
+extern "C" void
+fasguardfilter()
+{
+    // no-op
+}
+
 BenignNgramStorage::BenignNgramStorage(int ip_protocol_num, int port_num,
                                        int min_ngram_size, int max_ngram_size):
   m_ip_protocol_num(ip_protocol_num), m_port_num(port_num),

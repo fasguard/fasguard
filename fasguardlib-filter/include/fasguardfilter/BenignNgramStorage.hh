@@ -3,6 +3,15 @@
 #include <map>
 #include <string>
 #include <inttypes.h>
+
+/*!
+ * \brief do-nothing function with C linkage
+ *
+ * This makes it possible to use GNU Autoconf's AC_CHECK_LIB() to find
+ * libfasguardfilter.
+ */
+extern "C" void fasguardfilter();
+
 /**
  * @brief This is an abstract base class that defines the interface for any
  *      storage implementation that holds ngrams of benign traffic.
