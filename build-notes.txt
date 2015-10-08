@@ -1,0 +1,42 @@
+Build ASG:
+1)  Install the required build and runtime dependencies.  Assuming
+    Ubuntu 14.04, install the following packages:
+      * build-essential
+      * libboost-log-dev
+      * libboost-python-dev
+      * libboost-regex-dev
+      * libboost-tools-dev
+      * libcrypto++-dev
+2)  Install additional runtime dependencies.  Assuming Ubuntu 14.04, install
+    the following packages:
+      * python-dpkt
+      * python-libpcap
+      * python-lxml
+    and the following from PyPI (you may need to install the
+    python-pip package first):
+      * stix ('pip install stix'), which will automatically install cybox
+3)  cd to the signature-extraction/ASG directory
+4)  edit the paths in ./build to point to where you installed
+    libfasguardfilter and its headers
+5)  Run ./build
+6)  Execute "./ASG.py -h" and a help message should appear.
+
+Setting up TAXII based communications
+1) As root, execute 'pip install Django'
+2) As root, execute 'pip install libtaxii'
+3) As root, execute 'pip install taxii-services'
+4) As root, execute 'pip install pyopenssl'
+5) Create a directory ${HOME}/taxii
+6) In ${HOME}/taxii, execute
+   "git clone https://github.com/TAXIIProject/yeti.git"
+7) As root, execute 'apt-get install sqlite'
+8) As root, execute 'pip install django-solo' (don't know why this is
+9) In  ${HOME}/taxii/yeti, execute
+   "python manage.py syncdb"
+10) As root, execute 'pip install pyinotify'
+11) As root, execute 'pip install pyyaml'
+
+Installing Suricata:
+1) As root, execute 'add-apt-repository ppa:oisf/suricata-stable'
+2) As root, execute 'apt-get update'
+3) As root, execute 'apt-get install suricata'

@@ -17,15 +17,16 @@ import os
 import os.path
 import argparse
 import re
-import asgEngine
+import asg.asgEngine
 #import boost_log
 import ctypes
+import pkgutil
 import xml.etree.ElementTree as ET
-from properties.envProperties import EnvProperties
-from DetectorReports.detectorEvent import DetectorEvent
-from DetectorReports.detector_xmt_ext import DetectorReport
-from stixFromDb import StixFromDb
-from fasguardStixRule import FASGuardStixRule
+from asg.properties.envProperties import EnvProperties
+from asg.DetectorReports.detectorEvent import DetectorEvent
+from asg.DetectorReports.detector_xmt_ext import DetectorReport
+from asg.stixFromDb import StixFromDb
+from asg.fasguardStixRule import FASGuardStixRule
 
 def process_detection(filename,properties,debug):
     # de = DetectorEvent(filename)
@@ -41,7 +42,7 @@ def process_detection(filename,properties,debug):
     #                         attack_packet.Sport, attack_packet.Dport,
     #                         attack_packet.payload, attack_packet.probAttack)
     max_depth = int(properties.getProperty('ASG.MaxDepth'))
-    asg_e = asgEngine.PyAsgEngine(filename,properties,debug)
+    asg_e = asg.asgEngine.PyAsgEngine(filename,properties,debug)
     asg_e.loadDetectorEvent()
     asg_e.makeCandidateSignatureStringSet()
     #asg_e.makeTries()
@@ -59,7 +60,7 @@ def setup():
     parser.add_argument('-s','--sqldb',required=False,action='store_true',
                         help='retrieve FASGuard STIX XML file from sql db')
     parser.add_argument('-p','--properties',type=str,required=False,
-                        default='asg.properties',help='properties file')
+                        default=None, help='properties file')
 
     args = parser.parse_args()
     #print "In file: ",args.in_file
@@ -81,7 +82,12 @@ def setup():
     logger.addHandler(ch)
 
     logger.debug('debug message')
-    properties = EnvProperties(args.properties)
+    if args.properties is None:
+        propdata = pkgutil.get_data('asg', 'asg.properties')
+    else:
+        with open(args.properties, 'r') as f:
+            propdata = f.read()
+    properties = EnvProperties(propdata)
 
     if args.sqldb:
         # Connect to database
@@ -134,6 +140,4 @@ def setup():
 
     process_detection(args.in_file,properties,args.debug)
 if __name__ == '__main__':
-    my_lib = ctypes.cdll.LoadLibrary(
-        '/usr/lib/x86_64-linux-gnu/libboost_log.so.1.54.0')
     setup()
