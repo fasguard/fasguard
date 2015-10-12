@@ -1,0 +1,4 @@
+[submodule "fasguard-pcap"]
+	path = fasguard-pcap
+	url = ../fasguard-pcap.git
+	branch = master
