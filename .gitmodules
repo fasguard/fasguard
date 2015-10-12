@@ -1,3 +1,7 @@
+[submodule "fasguard-benign-traffic-collection"]
+	path = fasguard-benign-traffic-collection
+	url = ../fasguard-benign-traffic-collection.git
+	branch = master
 [submodule "fasguard-pcap"]
 	path = fasguard-pcap
 	url = ../fasguard-pcap.git
