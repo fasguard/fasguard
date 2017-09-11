@@ -15,11 +15,9 @@ Build ASG:
     and the following from PyPI (you may need to install the
     python-pip package first):
       * stix ('pip install stix'), which will automatically install cybox
-3)  cd to the signature-extraction/ASG directory
-4)  edit the paths in ./build to point to where you installed
-    libfasguardfilter and its headers
-5)  Run ./build
-6)  Execute "./ASG.py -h" and a help message should appear.
+3) Change to the base directory and execute make
+4)  cd to the signature-extraction/ASG directory
+5)  Execute "./ASG.py -h" and a help message should appear.
 
 Setting up TAXII based communications
 1) As root, execute 'pip install Django'
