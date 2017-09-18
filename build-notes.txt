@@ -1,12 +1,19 @@
 Build ASG:
 1)  Install the required build and runtime dependencies.  Assuming
-    Ubuntu 14.04, install the following packages:
+    Ubuntu 16.04, install the following packages:
       * build-essential
       * libboost-log-dev
       * libboost-python-dev
       * libboost-regex-dev
       * libboost-tools-dev
       * libcrypto++-dev
+      * virtualenv
+      * autoconf
+      * libtool
+      * libpcap-dev
+      * uuid-dev
+      * libpq-dev
+      * libboost-program-options-dev
 2)  Install additional runtime dependencies.  Assuming Ubuntu 14.04, install
     the following packages:
       * python-dpkt
